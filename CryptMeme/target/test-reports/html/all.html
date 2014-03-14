@@ -1,0 +1,224 @@
+<!DOCTYPE html><html xmlns:lxslt="http://xml.apache.org/xslt" xmlns:stringutils="xalan://org.apache.tools.ant.util.StringUtils">
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+        Unit Test Results
+     - All tests</title>
+<link href="stylesheet.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<div id="report" class="container container_8">
+<div class="grid_6 alpha">
+<div class="grailslogo"></div>
+<h1>
+        Unit Test Results
+     - All tests </h1>
+<p class="intro">
+                        A single test executed
+                    
+                        without a single error or failure!
+                    </p>
+</div>
+<div class="grid_2 omega">
+<nav id="navigationlinks">
+<p>
+<a href="failed.html">
+                    Tests with failure and errors
+                </a>
+</p>
+<p>
+<a href="index.html">
+                    Package summary
+                </a>
+</p>
+<p>
+<a href="all.html">
+                    Show all tests
+                </a>
+</p>
+</nav>
+</div>
+<div class="clear"></div>
+<div class="testsuite success">
+<div class="header">
+<h2>CryptMemeKeyPairTests</h2>
+<h3>
+                        A single test executed
+                    
+                        without a single error or failure!
+                    </h3>
+</div>
+<div class="testcase clearfix success grid_8 alpha omega" data-name="testSomething">
+<div class="grid_3 alpha">
+<p>
+<span class="icon success"></span><b class="testname message success">testSomething</b>
+</p>
+<p class="summary">Executed in 1.575 seconds.</p>
+</div>
+<div class="grid_5 omega outputinfo"></div>
+<div class="clear"></div>
+</div>
+<div class="clearfix output footer">
+<div class="sysout">
+<h2>Standard output</h2>
+<pre class="stdout">--Output from testSomething--
+Encrypted:
+z&Uuml;Ÿ&Ograve;`&oacute;&szlig;%[&Ecirc;;&amp;/&sup3;&cedil;j&yacute;5&oslash;&Ugrave;&yen;Š&raquo;&raquo;
+L&Iacute;&ecirc;E&Euml;&THORN;3&eacute;jV&eacute;&eth;&rsquo;&Yacute;\žŒžA7e&lt;&para;`v&ouml;N(q&pound;&Euml;)&iexcl;&pound;&ocirc;5&permil;&shy;&Aacute;&Atilde;VhF&aacute;*&sup1;&Eacute;&copy;a&trade;F.&pound;	&gt;fDŸ2&Ograve;oB.&uacute;&ordf;&Ograve;d&uacute;)&szlig;CQe&Oslash;&deg;wN&frac34;&yuml;&permil;&Ouml;&sect;fM&divide;|a-&atilde;&Dagger;&ldquo;&micro;&macr;&eacute;L&Oslash;?#&sup2;ŽœŒ[&uml;t&Otilde;#ae&Egrave;t&aacute;%&acute;z&yacute;q&agrave;S&middot;&middot;&Acirc;??&Yacute;A&hellip;&curren;#n?&reg;&pound;˜&brvbar;&agrave;&otilde;,"dZ&ldquo;&curren;H&egrave;&divide;&euml;˜&uacute;&Ocirc;8Kže&euml;B&shy;6]&ETH;&euml;t&lt;^|va&Igrave;&Icirc;&aelig;&laquo;&Ccedil;6$=90&para;žC&reg;&sbquo;&egrave;&micro;&bdquo;&pound;r&cedil;&euro;&Ocirc;&oslash;|&micro;0]0D&Aring;
+
+Public Key:
+18444467922346261100332008308065896479137040394580040736621593645028174281165785988555918002767293929607772757599655340369957620705053090045423408943049245068904471048984274702116067432533861030304471995378851266083335935890435700630532416069454098951896273357873967222124197187405907699686312872331287267611929747600249495858247783038535151619925240269817515432258415309946527521028315864308223822149729246607985187943583663007395770897510630386132889540760343514973731379287958064791438709233841635421738691788382994673816018888244176951804261973589115726471964487723565900203392747893618817093722541330700212995119|65537
+
+Decrypted:
+This is a test!</pre>
+</div>
+<div class="syserr">
+<h2>System error</h2>
+<pre class="syserr">--Output from testSomething--
+</pre>
+</div>
+</div>
+<div class="clear"></div>
+</div>
+<div class="clear"></div>
+</div>
+<!--
+            Parses JUnit output and associates it with the corresponding test case
+        -->
+<script language="javascript">
+
+
+/**
+ * The JUnit report format is incredibly stuipd in the
+ * sense that it accumulates output from all test methods
+ * into a single xml node.
+ */
+(function() {
+
+    var outputElements = findOutputElements();
+    for (var i in outputElements) {
+        var outputElement = outputElements[i];
+        var textOutput = outputElement.element.firstChild.nodeValue;
+        var header = outputElement.getHeader();
+        appendTestMethodOutput(textOutput, header);
+    }
+
+    function findOutputElements() {
+        var outputElements = [];
+        var preElements = document.getElementsByTagName("pre");
+        for (var i in preElements) {
+            var preElement = preElements[i];
+            var className = preElement.className || "";
+            if (className.indexOf("stdout") >= 0) {
+                var outputElement = new OutputElement(preElement, "output");
+                outputElements.push(outputElement);
+            } else if (className.indexOf("syserr") >= 0) {
+                var outputElement = new OutputElement(preElement, "error");
+                outputElements.push(outputElement);
+            }
+        }
+
+        return outputElements;
+    }
+
+    function OutputElement(element, type) {
+        this.element = element;
+        this.type = type;
+
+        this.getHeader = function() {
+            if (type === "output") {
+                return "System output";
+            } else if ("error") {
+                return "System error";
+            }
+        }
+    }
+
+    function appendTestMethodOutput(text, header) {
+        var testOutput = new TestMethodOutput(header);
+
+        var lines = text.split(/\r\n|\r|\n/);
+        for (var i in lines) {
+            var line = lines[i];
+            var matches = line.match(/^--Output from (.*)--$/);
+            if (matches !== null && matches.length == 2) {
+                testOutput.flushToDom();
+                testOutput.testName = matches[1];
+            } else {
+                testOutput.addLine(line);
+            }
+        }
+
+        testOutput.flushToDom();
+    }
+
+    function TestMethodOutput(header) {
+        this.header = header;
+        this.testName = undefined;
+        this.buffer = "";
+
+        this.addLine = function(line) {
+            this.buffer += line + "\n";
+        }
+
+        this.flushToDom = function() {
+            if (this.testName !== undefined) {
+                var domNode = getTestcaseElementByName(this.testName);
+                if (domNode !== undefined && trimString(this.buffer).length > 0) {
+                    this.appendTo(domNode);
+                }
+
+                this.reset();
+            }
+        }
+
+        this.appendTo = function(domNode) {
+            var node = document.createElement("div");
+            node.innerHTML = '<p><b class="message">' + header + '</b></p>';
+
+            var preNode = document.createElement("pre");
+            preNode.appendChild(document.createTextNode(this.buffer));
+            node.appendChild(preNode);
+
+            var outputContainer = findElementByTagClassAndParent("div", "outputinfo", domNode);
+            outputContainer.appendChild(node);
+        }
+
+        this.reset = function() {
+            this.methodName = undefined;
+            this.buffer = "";
+        }
+    }
+
+    function getTestcaseElementByName(name) {
+        var divElements = document.getElementsByTagName("div");
+        var elementCount = divElements.length;
+        for (var i=0; i<elementCount; i++) {
+            var el = divElements[i];
+            if (el.getAttribute("data-name") === name) {
+                return el;
+            }
+        }
+    }
+
+    function findElementByTagClassAndParent(tagName, className, parentNode) {
+        var elements = parentNode.getElementsByTagName(tagName);
+        for (var i in elements) {
+            var element = elements[i];
+
+            // Not 100% correct, but good enough here
+            if (element.className !== undefined && element.className.indexOf(className) >= 0) {
+                return element;
+            }
+        }
+    }
+
+    function trimString(str) {
+        return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+    }
+
+})();
+
+        </script>
+</body>
+</html>
