@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <testsuites>
-  <testsuite errors="0" failures="0" hostname="C569TY1" id="0" name="CryptMemeKeyPairTests" package="cryptmeme" tests="1" time="1.607" timestamp="2014-03-14T21:19:51">
+  <testsuite errors="0" failures="0" hostname="C569TY1" id="0" name="CryptMemeKeyPairTests" package="cryptmeme" tests="1" time="1.294" timestamp="2014-03-15T15:30:59">
       <properties />
 
-      <testcase classname="cryptmeme.CryptMemeKeyPairTests" name="testSomething" time="1.575" />
+      <testcase classname="cryptmeme.CryptMemeKeyPairTests" name="testSomething" time="1.262" />
 
       <system-out><![CDATA[--Output from testSomething--
 Encrypted:
-zÜŸÒ`óß%[Ê;&/³¸jý5øÙ¥Š»»
-LÍêEËÞ3éjVéð’Ý\žŒžA7e<¶`vöN(q£Ë)¡£ô5‰­ÁÃVhFá*¹É©a™F.£	>fDŸ2ÒoB.úªÒdú)ßCQeØ°wN¾ÿ‰Ö§fM÷|a-ã‡“µ¯éLØ?#²ŽœŒ[¨tÕ#aeÈtá%´zýqàS··Â??ÝA…¤#n?®£˜¦àõ,"dZ“¤Hè÷ë˜úÔ8KžeëB­6]Ðët<^|vaÌÎæ«Ç6$=90¶žC®‚èµ„£r¸€Ôø|µ0]0DÅ
+È-ZÃ“¯?I×Ë7&‰b•\ú?øì?öˆÖ05™{ÜQ¨÷èðº,”Û~ÅÕ–[¬Z›ÆÉUu|²‰ÊvEL¾.!)O{›zXh9Q‚SÒ1ËrigBcO«Tt<¤z1¡A{N³{<?°Ù©\ËU‹È‚ÎZ¬—~nÛØ
+
+Signature:
+NðëÅo\Ÿ?§êUºöÌ¶yaÊ©í³Ø7%ž´PA9‹À~“+ŒDk I+dî/žh§GàÄ‘w$Z)#†”{yßFÏ8K.:^ák?ŽeF½œi”¾ÆŽÏ¦°~‡´€3­£ÎÜ1É?9’G‹rY>qìeºßD.4K|}ÖU
 
 Public Key:
-18444467922346261100332008308065896479137040394580040736621593645028174281165785988555918002767293929607772757599655340369957620705053090045423408943049245068904471048984274702116067432533861030304471995378851266083335935890435700630532416069454098951896273357873967222124197187405907699686312872331287267611929747600249495858247783038535151619925240269817515432258415309946527521028315864308223822149729246607985187943583663007395770897510630386132889540760343514973731379287958064791438709233841635421738691788382994673816018888244176951804261973589115726471964487723565900203392747893618817093722541330700212995119|65537
+rO0ABXNyABRqYXZhLm1hdGguQmlnSW50ZWdlcoz8nx+pO/sdAwAGSQAIYml0Q291bnRJAAliaXRMZW5ndGhJABNmaXJzdE5vbnplcm9CeXRlTnVtSQAMbG93ZXN0U2V0Qml0SQAGc2lnbnVtWwAJbWFnbml0dWRldAACW0J4cgAQamF2YS5sYW5nLk51bWJlcoaslR0LlOCLAgAAeHD///////////////7////+AAAAAXVyAAJbQqzzF/gGCFTgAgAAeHAAAACAhgv4/vROdh3BWsjz1//5uRFBoZfCzKqnJLF+qOdtTNUu2SxBQhteSQS+9YF9JKB1NPK72MqujfBDxVlmdC23pHkvM5ZinKpTZgrD/BymXHEzgQ7YAEckv6n6E06I7WB6d33U4mhNolwEdqXJDVivJzM/L73PFgrfKBnGZe5b0FV4c3EAfgAA///////////////+/////gAAAAF1cQB+AAQAAAADAQABeA==
 
 Decrypted:
 This is a test!]]></system-out>

@@ -19,6 +19,8 @@ import java.security.spec.X509EncodedKeySpec
 import java.util.Date;
 import java.util.Iterator;
 import javax.crypto.Cipher
+import javax.xml.bind.annotation.adapters.HexBinaryAdapter
+import net.i2p.data.Base64
 import org.cryptmeme.exception.CryptMemeEncryptionException
 
 /**
@@ -38,7 +40,7 @@ class CryptMemeKeyPair {
 	static belongsTo = [person:Person];
 
 	public PrivateKey privateKey;
-	
+
 	public PublicKey publicKey;
 
 	public Date timeStamp;
@@ -85,7 +87,7 @@ class CryptMemeKeyPair {
 		}
 		KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
 		SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "SUN");
-		kpg.initialize(2048, random);
+		kpg.initialize(1024, random);
 		KeyPair pair = kpg.generateKeyPair();
 
 		this.publicKey = pair.getPublic();
@@ -93,7 +95,7 @@ class CryptMemeKeyPair {
 
 		this.timeStamp = new Date(System.currentTimeMillis());
 	}
-	
+
 	/**
 	 * Returns the public key as a byte array (to share with the public)
 	 * @return
@@ -102,21 +104,70 @@ class CryptMemeKeyPair {
 		if (this.publicKey != null) {
 			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 			RSAPublicKeySpec rsaPubKeySpec = keyFactory.getKeySpec(publicKey, RSAPublicKeySpec.class);
-			return rsaPubKeySpec.getModulus().toString() + "|" + rsaPubKeySpec.getPublicExponent().toString();
-		} 
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(baos));
+			oos.writeObject(rsaPubKeySpec.getModulus());
+			oos.writeObject(rsaPubKeySpec.getPublicExponent());
+			oos.flush();
+			return toBase64(baos.toByteArray());
+		}
 		return null;
 	}
-	
+
 	/**
 	 * Sets the public key for this pair from the output of getPublicKey()
 	 * @param pubKey
 	 */
 	public void setPublicKey(String pubKey) throws Exception {
-		String[] specs = pubKey.split("|");
-		BigInteger modulus = new BigInteger(specs[0]);
-		BigInteger exponent = new BigInteger(specs[1]);
+		ByteArrayInputStream bais = new ByteArrayInputStream(toBytes(pubKey));
+		ObjectInputStream ois = new ObjectInputStream(bais);
+		BigInteger modulus = (BigInteger) ois.readObject();
+		BigInteger exponent = (BigInteger) ois.readObject();
 		RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(modulus, exponent);
 		KeyFactory fact = KeyFactory.getInstance("RSA");
 		this.publicKey = fact.generatePublic(rsaPublicKeySpec);
+	}
+	
+	/**
+	 * Creates a signature based on the private key and message for this key pair
+	 * @param message
+	 * @return
+	 */
+	public byte[] sign(byte[] message) {
+		Signature sig = Signature.getInstance("SHA256withRSA","SunRsaSign");
+		sig.initSign(this.privateKey);
+		sig.update(message);
+		return sig.sign();
+	}
+	
+	/**
+	 * Verifies the message based on the public key in this key pair
+	 * @param message
+	 * @param signature
+	 * @return true if message is authentic
+	 */
+	public boolean verify(byte[] message, byte[] signature) {
+		Signature sig = Signature.getInstance("SHA256withRSA","SunRsaSign");
+		sig.initVerify(this.publicKey);
+		sig.update(message);
+		return sig.verify(signature);
+	}
+
+	/**
+	 * Converts a byte array to a hex string
+	 * @param bytes
+	 * @return
+	 */
+	private String toBase64(byte[] bytes) {
+		return Base64.encode(bytes,true);
+	}
+
+	/**
+	 * Converts a hex string into a byte array
+	 * @param hex
+	 * @return
+	 */
+	private byte[] toBytes(String base64) {
+		return Base64.decode(base64)
 	}
 }

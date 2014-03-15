@@ -22,13 +22,20 @@ class CryptMemeKeyPairTests {
 		test.generateNewKeys();
 		
 		byte[] encrypted = test.encrypt("This is a test!".getBytes());
-		print "Encrypted:\n" + new String(encrypted);
+		print "Encrypted:\n" + new String(encrypted) + "\n\n";
 		
+		byte[] signature = test.sign(encrypted);
+		
+		print "Signature:\n" + new String(signature);
+		
+		test.setPublicKey(test.getPublicKey());
 		print "\n\nPublic Key:\n" + test.getPublicKey();
 		
 		String decrypted = new String(test.decrypt(encrypted));
 		print "\n\nDecrypted:\n" + decrypted;
 		
 		assert decrypted == "This is a test!";
+		
+		assert test.verify(encrypted, signature);
 	}
 }
