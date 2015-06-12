@@ -1,0 +1,9 @@
+3/16/14 6:56:57 PM ERROR [2CP Reader 1] i2p.client.I2PSessionMuxedImpl: [I2PSessionMuxedImpl #24148]: Error occurred communicating with router: Router shutdown
+net.i2p.client.I2PSessionException: Disconnect Message received
+	at net.i2p.client.DisconnectMessageHandler.handleMessage(DisconnectMessageHandler.java:32)
+	at net.i2p.client.I2PSessionImpl.messageReceived(I2PSessionImpl.java:733)
+	at net.i2p.client.I2PSessionImpl2.messageReceived(I2PSessionImpl2.java)
+	at net.i2p.client.I2PSessionMuxedImpl.messageReceived(I2PSessionMuxedImpl.java)
+	at net.i2p.data.i2cp.I2CPMessageReader$I2CPMessageReaderRunner.run(I2CPMessageReader.java:168)
+	at java.lang.Thread.run(Thread.java:744)
+	at net.i2p.util.I2PThread.run(I2PThread.java:84)
