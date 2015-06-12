@@ -13,11 +13,11 @@ import org.springframework.beans.factory.InitializingBean;
 class I2PClientService implements InitializingBean, I2PSessionListener {
 	
 	public static final String PRIVATE_KEY_FILE = "./myDest.key";
-
+	public static I2PSession session;
+	
 	static scope = "singleton";
 	
 	private I2PDatagramMaker _dgram_maker;
-	private I2PSession _session;
 	private I2PClient _client;
 	private List<Person> _peers;
 	private List<MessageListener> _listeners;
@@ -41,12 +41,12 @@ class I2PClientService implements InitializingBean, I2PSessionListener {
 			fos.close();
 		}
 		FileInputStream fis = new FileInputStream(PRIVATE_KEY_FILE);
-		_session = _client.createSession(fis, null);
-		_session.connect();
+		session = _client.createSession(fis, null);
+		session.connect();
 		fis.close();
-		_session.setSessionListener(this);
+		session.setSessionListener(this);
 		_dgram_maker = new I2PDatagramMaker(_session);
-		me = _session.getMyDestination();
+		me = session.getMyDestination();
 		print "I2P Client Service set up. My destination:\n" + me.toBase64();
 	}
 
