@@ -6,6 +6,7 @@ import net.i2p.client.I2PSession
 import net.i2p.client.I2PSessionListener
 import net.i2p.client.datagram.I2PDatagramMaker
 import net.i2p.data.Destination
+import net.i2p.data.RouterInfo
 import net.i2p.router.Router
 
 import org.cryptmeme.MessageListener
@@ -35,11 +36,12 @@ class I2PClientService implements InitializingBean, I2PSessionListener {
 		// Properties props = new Properties();
 		// props.put("i2p.dir.base","./i2p");
 		router = new Router();
-		router.startupStuff();
+		router.runRouter();
 		
 		println "Setting up I2P Client Service...";
 		
-		router.context.clientManager().startup();
+		Map configMap = router.getConfigMap();
+		RouterInfo routerInfo = router.getRouterInfo();
 		
 		_peers = new ArrayList<Person>();
 		_listeners = new ArrayList<MessageListener>();
@@ -61,12 +63,13 @@ class I2PClientService implements InitializingBean, I2PSessionListener {
 				connected = true;
 			} catch (Exception e) {
 				println "Failed to connect, trying again:";
+				Thread.sleep(10000);
 				println e.toString();
 			}
 		}
 		fis.close();
 		session.setSessionListener(this);
-		_dgram_maker = new I2PDatagramMaker(_session);
+		// _dgram_maker = new I2PDatagramMaker(session);
 		me = session.getMyDestination();
 		print "I2P Client Service set up. My destination:\n" + me.toBase64();
 	}
