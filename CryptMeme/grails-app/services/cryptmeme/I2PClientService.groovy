@@ -6,6 +6,7 @@ import net.i2p.client.I2PSession
 import net.i2p.client.I2PSessionListener
 import net.i2p.client.datagram.I2PDatagramMaker
 import net.i2p.data.Destination
+import net.i2p.router.Router
 
 import org.cryptmeme.MessageListener
 import org.springframework.beans.factory.InitializingBean;
@@ -14,6 +15,7 @@ class I2PClientService implements InitializingBean, I2PSessionListener {
 	
 	public static final String PRIVATE_KEY_FILE = "./myDest.key";
 	public static I2PSession session;
+	public static Router router;
 	
 	static scope = "singleton";
 	
@@ -29,7 +31,16 @@ class I2PClientService implements InitializingBean, I2PSessionListener {
 	}
 	
 	public void init() {
+		println "Starting up the I2P Router..."
+		// Properties props = new Properties();
+		// props.put("i2p.dir.base","./i2p");
+		router = new Router();
+		router.startupStuff();
+		
 		println "Setting up I2P Client Service...";
+		
+		router.context.clientManager().startup();
+		
 		_peers = new ArrayList<Person>();
 		_listeners = new ArrayList<MessageListener>();
 		
@@ -40,9 +51,19 @@ class I2PClientService implements InitializingBean, I2PSessionListener {
 			fos.flush();
 			fos.close();
 		}
+		
 		FileInputStream fis = new FileInputStream(PRIVATE_KEY_FILE);
 		session = _client.createSession(fis, null);
-		session.connect();
+		boolean connected = false;
+		while (!connected) {
+			try {
+				session.connect();
+				connected = true;
+			} catch (Exception e) {
+				println "Failed to connect, trying again:";
+				println e.toString();
+			}
+		}
 		fis.close();
 		session.setSessionListener(this);
 		_dgram_maker = new I2PDatagramMaker(_session);

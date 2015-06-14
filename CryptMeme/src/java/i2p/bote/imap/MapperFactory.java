@@ -193,7 +193,6 @@ class MapperFactory extends MailboxSessionMapperFactory<String> {
                 }
             }
 
-            @Override
             public MessageMetaData move(Mailbox<String> mailbox, Message<String> message) throws MailboxException {
                 MessageMetaData metadata = copy(mailbox, message);
                 delete(mailbox, message);

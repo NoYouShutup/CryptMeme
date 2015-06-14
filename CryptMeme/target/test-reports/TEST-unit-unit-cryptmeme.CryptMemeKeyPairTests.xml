@@ -1,22 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<testsuite errors="0" failures="0" hostname="C569TY1" name="cryptmeme.CryptMemeKeyPairTests" tests="1" time="1.59" timestamp="2014-03-24T19:29:05">
-  <properties />
-  <testcase classname="cryptmeme.CryptMemeKeyPairTests" name="testSomething" time="1.557" />
-  <system-out><![CDATA[--Output from testSomething--
-Encrypted:
-bw!å$ìmk_’/
- -†3®ÏØ°•ç ¯4
-ÁãRŽŸÙûóîÕ)PÑ›ˆ@= ’	-×m¥¡7˜xÂS€Æ¶¯|+àÿŒCRøôÀ¹¸Ô—õZ¤w«¼¨bÐ¼?E°"QðQ¶;mÊ8pÙMtêFpôù,,¾ok¿Í‹ÓMÏ
-
-Signature:
-Bÿ?µQlÿ
-àQ*‘Óñ«+§ÛCÍùu»ySjáHÎ7\$bH¿o¸Z"aüðÑiTp P¥#×ù"ra8[¾Í¤+cÓ883;o^Þ}§´ÞýÊX¦¤YRÐ¼«#xÈC{Ÿ'ŠÀ¸*y’Õñ†8¢_ÕO	?†F„8™
-
-Public Key:
-rO0ABXNyABRqYXZhLm1hdGguQmlnSW50ZWdlcoz8nx+pO/sdAwAGSQAIYml0Q291bnRJAAliaXRMZW5ndGhJABNmaXJzdE5vbnplcm9CeXRlTnVtSQAMbG93ZXN0U2V0Qml0SQAGc2lnbnVtWwAJbWFnbml0dWRldAACW0J4cgAQamF2YS5sYW5nLk51bWJlcoaslR0LlOCLAgAAeHD///////////////7////+AAAAAXVyAAJbQqzzF/gGCFTgAgAAeHAAAACAoMCD7t/ZiBTYKab9mTV3tPtuBJ2DdDzdYu7YaCdg0mfQLOvIpMrtZeyQHnnlUXjxTleQym6YILzlAR6D3//Th2UArlV318W9Zo+At/8ZgHo63qdVrrDZ2h8Mpo5GOS3Qj8/CRJssqzKXcpnAUE9kSS9MlcFjEWQA/XN/Ofm2d5F4c3EAfgAA///////////////+/////gAAAAF1cQB+AAQAAAADAQABeA==
-
-Decrypted:
-This is a test!]]></system-out>
-  <system-err><![CDATA[--Output from testSomething--
-]]></system-err>
-</testsuite>

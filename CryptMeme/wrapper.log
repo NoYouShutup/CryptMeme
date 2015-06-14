@@ -1,4 +1,59 @@
-ERROR - Cannot find I2P installation in C:\Users\jmorgan\git\NoYouShutup\CryptMeme\CryptMeme - Will probably be just a router with no apps or console at all!
+Setting up new user directory C:\Users\jmorgan\AppData\Roaming\I2P
+Created C:\Users\jmorgan\AppData\Roaming\I2P\eepsite
+Created C:\Users\jmorgan\AppData\Roaming\I2P\eepsite\cgi-bin
+Created C:\Users\jmorgan\AppData\Roaming\I2P\eepsite\contexts
+Copied .\i2p\eepsite\contexts\base-context.xml
+Copied .\i2p\eepsite\contexts\cgi-context.xml
+Created C:\Users\jmorgan\AppData\Roaming\I2P\eepsite\docroot
+Copied .\i2p\eepsite\docroot\favicon.ico
+Created C:\Users\jmorgan\AppData\Roaming\I2P\eepsite\docroot\help
+Copied .\i2p\eepsite\docroot\help\index.html
+Copied .\i2p\eepsite\docroot\help\index_de.html
+Copied .\i2p\eepsite\docroot\help\index_fr.html
+Copied .\i2p\eepsite\docroot\help\index_na.html
+Copied .\i2p\eepsite\docroot\help\index_nl.html
+Copied .\i2p\eepsite\docroot\help\index_ru.html
+Copied .\i2p\eepsite\docroot\help\index_sv.html
+Created C:\Users\jmorgan\AppData\Roaming\I2P\eepsite\docroot\help\lib
+Copied .\i2p\eepsite\docroot\help\lib\bg.png
+Copied .\i2p\eepsite\docroot\help\lib\brown.png
+Copied .\i2p\eepsite\docroot\help\lib\cn.png
+Copied .\i2p\eepsite\docroot\help\lib\de.png
+Copied .\i2p\eepsite\docroot\help\lib\eepsite.css
+Copied .\i2p\eepsite\docroot\help\lib\es.png
+Copied .\i2p\eepsite\docroot\help\lib\fr.png
+Copied .\i2p\eepsite\docroot\help\lib\h2bg.png
+Copied .\i2p\eepsite\docroot\help\lib\ir.png
+Copied .\i2p\eepsite\docroot\help\lib\it.png
+Copied .\i2p\eepsite\docroot\help\lib\itoopie.png
+Copied .\i2p\eepsite\docroot\help\lib\jp.png
+Copied .\i2p\eepsite\docroot\help\lib\nl.png
+Copied .\i2p\eepsite\docroot\help\lib\ru.png
+Copied .\i2p\eepsite\docroot\help\lib\se.png
+Copied .\i2p\eepsite\docroot\help\lib\us.png
+Copied .\i2p\eepsite\docroot\help\pagetemplate.html
+Copied .\i2p\eepsite\docroot\index.html
+Copied .\i2p\eepsite\docroot\robots.txt
+Created C:\Users\jmorgan\AppData\Roaming\I2P\eepsite\etc
+Copied .\i2p\eepsite\etc\realm.properties
+Copied .\i2p\eepsite\etc\webdefault.xml
+Copied .\i2p\eepsite\jetty-jmx.xml
+Copied .\i2p\eepsite\jetty-rewrite.xml
+Copied .\i2p\eepsite\jetty-ssl.xml
+Copied .\i2p\eepsite\jetty.xml
+Created C:\Users\jmorgan\AppData\Roaming\I2P\eepsite\logs
+Created C:\Users\jmorgan\AppData\Roaming\I2P\eepsite\webapps
+Copied .\i2p\blocklist.txt
+Copied .\i2p\hosts.txt
+Copied .\i2p\i2psnark.config
+Copied .\i2p\i2ptunnel.config
+Copied .\i2p\systray.config
+Copied .\i2p\eepsite\jetty.xml with modifications
+Copied .\i2p\eepsite\jetty-ssl.xml with modifications
+Copied .\i2p\eepsite\contexts\base-context.xml with modifications
+Copied .\i2p\eepsite\contexts\cgi-context.xml with modifications
+Copied .\i2p\clients.config with modifications
+Successfully copied data files to new user directory C:\Users\jmorgan\AppData\Roaming\I2P
 WARNING: Resource name [jcpuid-x86-windows.dll] was not found
 WARNING: Native CPUID library jcpuid not loaded - will not be able to read CPU information using CPUID
 INFO: Resource name [jbigi-windows-athlon64_64.dll] was not found
@@ -6,13 +61,11 @@ INFO: Resource name [jbigi-windows-athlon64.dll] was not found
 INFO: Resource name [jbigi-windows-none_64.dll] was not found
 INFO: Resource name [jbigi-windows-none.dll] was not found
 WARNING: Native BigInteger library jbigi not loaded - using pure Java - poor performance may result - see http://www.i2p2.i2p/jbigi for help
-Warning - No client config file C:\Users\jmorgan\git\NoYouShutup\CryptMeme\CryptMeme\clients.config
-Warning - No client apps or router console configured - we are just a router
 Setting up I2P Client Service...
-2014-03-15 18:25:38,633 [localhost-startStop-1] ERROR context.GrailsContextLoader  - Error initializing the application: null
+2015-06-12 17:58:31,711 [localhost-startStop-1] ERROR context.GrailsContextLoader  - Error initializing the application: null
 Message: null
     Line | Method
-->>   12 | doCall                           in BootStrap$_closure1
+->>   10 | doCall                           in BootStrap$_closure1
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 |    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
 |    301 | executeForEnvironment . . . . .  in     ''
@@ -26,8 +79,8 @@ Caused by I2PSessionException: No manager yet
 ->>  253 | connect                          in net.i2p.router.client.ClientManagerFacadeImpl
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 |    457 | connect                          in net.i2p.client.I2PSessionImpl
-|     45 | init . . . . . . . . . . . . . . in cryptmeme.I2PClientService
-|     12 | doCall                           in BootStrap$_closure1
+|     54 | init . . . . . . . . . . . . . . in cryptmeme.I2PClientService
+|     10 | doCall                           in BootStrap$_closure1
 |    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
 |    301 | executeForEnvironment            in     ''
 |    277 | executeForCurrentEnvironment . . in     ''
@@ -36,18 +89,165 @@ Caused by I2PSessionException: No manager yet
 |    615 | run                              in java.util.concurrent.ThreadPoolExecutor$Worker
 ^    744 | run . . . . . . . . . . . . . .  in java.lang.Thread
 
-3/15/14 6:25:35 PM CRIT  [r 1 shutdown] net.i2p.router.Router         : Shutting down the router...
-3/15/14 6:25:35 PM CRIT  [r 1 shutdown] net.i2p.router.Router         : Starting final shutdown(3)
-Reseed start
-Reseeding from https://i2p-netdb.innovatio.no/
-Reseed got no router infos from https://i2p-netdb.innovatio.no/
-Reseeding from https://reseed.i2p-projekt.de/
-Reseed got no router infos from https://reseed.i2p-projekt.de/
-Reseeding from https://cowpuncher.drollette.com/netdb/
-Exception in thread "UPnP Port Opener 1" java.lang.NullPointerException
-	at net.i2p.router.transport.UPnP.addMapping(UPnP.java:691)
-	at net.i2p.router.transport.UPnP.tryAddMapping(UPnP.java:315)
-	at net.i2p.router.transport.UPnP.access$100(UPnP.java:70)
-	at net.i2p.router.transport.UPnP$RegisterPortsThread.run(UPnP.java:946)
-	at java.lang.Thread.run(Thread.java:744)
-3/15/14 6:25:38 PM CRIT  [r 1 shutdown] net.i2p.router.Router         : Shutdown(3) complete
+WARNING: Resource name [jcpuid-x86-windows.dll] was not found
+WARNING: Native CPUID library jcpuid not loaded - will not be able to read CPU information using CPUID
+INFO: Resource name [jbigi-windows-athlon64_64.dll] was not found
+INFO: Resource name [jbigi-windows-athlon64.dll] was not found
+INFO: Resource name [jbigi-windows-none_64.dll] was not found
+INFO: Resource name [jbigi-windows-none.dll] was not found
+WARNING: Native BigInteger library jbigi not loaded - using pure Java - poor performance may result - see http://www.i2p2.i2p/jbigi for help
+Setting up I2P Client Service...
+2015-06-12 18:01:14,770 [localhost-startStop-1] ERROR context.GrailsContextLoader  - Error initializing the application: null
+Message: null
+    Line | Method
+->>   10 | doCall                           in BootStrap$_closure1
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
+|    301 | executeForEnvironment . . . . .  in     ''
+|    277 | executeForCurrentEnvironment     in     ''
+|    262 | run . . . . . . . . . . . . . .  in java.util.concurrent.FutureTask
+|   1145 | runWorker                        in java.util.concurrent.ThreadPoolExecutor
+|    615 | run . . . . . . . . . . . . . .  in java.util.concurrent.ThreadPoolExecutor$Worker
+^    744 | run                              in java.lang.Thread
+
+Caused by I2PSessionException: No manager yet
+->>  253 | connect                          in net.i2p.router.client.ClientManagerFacadeImpl
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|    457 | connect                          in net.i2p.client.I2PSessionImpl
+|     54 | init . . . . . . . . . . . . . . in cryptmeme.I2PClientService
+|     10 | doCall                           in BootStrap$_closure1
+|    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
+|    301 | executeForEnvironment            in     ''
+|    277 | executeForCurrentEnvironment . . in     ''
+|    262 | run                              in java.util.concurrent.FutureTask
+|   1145 | runWorker . . . . . . . . . . .  in java.util.concurrent.ThreadPoolExecutor
+|    615 | run                              in java.util.concurrent.ThreadPoolExecutor$Worker
+^    744 | run . . . . . . . . . . . . . .  in java.lang.Thread
+
+WARNING: Resource name [jcpuid-x86-windows.dll] was not found
+WARNING: Native CPUID library jcpuid not loaded - will not be able to read CPU information using CPUID
+INFO: Resource name [jbigi-windows-athlon64_64.dll] was not found
+INFO: Resource name [jbigi-windows-athlon64.dll] was not found
+INFO: Resource name [jbigi-windows-none_64.dll] was not found
+INFO: Resource name [jbigi-windows-none.dll] was not found
+WARNING: Native BigInteger library jbigi not loaded - using pure Java - poor performance may result - see http://www.i2p2.i2p/jbigi for help
+WARNING: Resource name [jcpuid-x86-windows.dll] was not found
+WARNING: Native CPUID library jcpuid not loaded - will not be able to read CPU information using CPUID
+INFO: Resource name [jbigi-windows-athlon64_64.dll] was not found
+INFO: Resource name [jbigi-windows-athlon64.dll] was not found
+INFO: Resource name [jbigi-windows-none_64.dll] was not found
+INFO: Resource name [jbigi-windows-none.dll] was not found
+WARNING: Native BigInteger library jbigi not loaded - using pure Java - poor performance may result - see http://www.i2p2.i2p/jbigi for help
+Setting up I2P Client Service...
+WARNING: Resource name [jcpuid-x86-windows.dll] was not found
+WARNING: Native CPUID library jcpuid not loaded - will not be able to read CPU information using CPUID
+INFO: Resource name [jbigi-windows-athlon64_64.dll] was not found
+INFO: Resource name [jbigi-windows-athlon64.dll] was not found
+INFO: Resource name [jbigi-windows-none_64.dll] was not found
+INFO: Resource name [jbigi-windows-none.dll] was not found
+WARNING: Native BigInteger library jbigi not loaded - using pure Java - poor performance may result - see http://www.i2p2.i2p/jbigi for help
+Setting up I2P Client Service...
+2015-06-13 14:28:29,583 [localhost-startStop-1] ERROR context.GrailsContextLoader  - Error initializing the application: null
+Message: null
+    Line | Method
+->>   10 | doCall                           in BootStrap$_closure1
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
+|    301 | executeForEnvironment . . . . .  in     ''
+|    277 | executeForCurrentEnvironment     in     ''
+|    262 | run . . . . . . . . . . . . . .  in java.util.concurrent.FutureTask
+|   1145 | runWorker                        in java.util.concurrent.ThreadPoolExecutor
+|    615 | run . . . . . . . . . . . . . .  in java.util.concurrent.ThreadPoolExecutor$Worker
+^    744 | run                              in java.lang.Thread
+
+Caused by I2PSessionException: [I2PSessionMuxedImpl #47272]: Cannot connect to the router on [internal connection]:0
+->>  527 | connect                          in net.i2p.client.I2PSessionImpl
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|     56 | init                             in cryptmeme.I2PClientService
+|     10 | doCall . . . . . . . . . . . . . in BootStrap$_closure1
+|    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
+|    301 | executeForEnvironment . . . . .  in     ''
+|    277 | executeForCurrentEnvironment     in     ''
+|    262 | run . . . . . . . . . . . . . .  in java.util.concurrent.FutureTask
+|   1145 | runWorker                        in java.util.concurrent.ThreadPoolExecutor
+|    615 | run . . . . . . . . . . . . . .  in java.util.concurrent.ThreadPoolExecutor$Worker
+^    744 | run                              in java.lang.Thread
+
+Caused by IOException: No tunnels built after waiting 5 minutes. Your network connection may be down, or there is severe network congestion.
+->>  504 | connect                          in net.i2p.client.I2PSessionImpl
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|     56 | init                             in cryptmeme.I2PClientService
+|     10 | doCall . . . . . . . . . . . . . in BootStrap$_closure1
+|    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
+|    301 | executeForEnvironment . . . . .  in     ''
+|    277 | executeForCurrentEnvironment     in     ''
+|    262 | run . . . . . . . . . . . . . .  in java.util.concurrent.FutureTask
+|   1145 | runWorker                        in java.util.concurrent.ThreadPoolExecutor
+|    615 | run . . . . . . . . . . . . . .  in java.util.concurrent.ThreadPoolExecutor$Worker
+^    744 | run                              in java.lang.Thread
+
+WARNING: Resource name [jcpuid-x86-windows.dll] was not found
+WARNING: Native CPUID library jcpuid not loaded - will not be able to read CPU information using CPUID
+INFO: Resource name [jbigi-windows-athlon64_64.dll] was not found
+INFO: Resource name [jbigi-windows-athlon64.dll] was not found
+INFO: Resource name [jbigi-windows-none_64.dll] was not found
+INFO: Resource name [jbigi-windows-none.dll] was not found
+WARNING: Native BigInteger library jbigi not loaded - using pure Java - poor performance may result - see http://www.i2p2.i2p/jbigi for help
+Setting up I2P Client Service...
+2015-06-13 17:48:54,062 [localhost-startStop-1] ERROR context.GrailsContextLoader  - Error initializing the application: null
+Message: null
+    Line | Method
+->>   10 | doCall                           in BootStrap$_closure1
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
+|    301 | executeForEnvironment . . . . .  in     ''
+|    277 | executeForCurrentEnvironment     in     ''
+|    262 | run . . . . . . . . . . . . . .  in java.util.concurrent.FutureTask
+|   1145 | runWorker                        in java.util.concurrent.ThreadPoolExecutor
+|    615 | run . . . . . . . . . . . . . .  in java.util.concurrent.ThreadPoolExecutor$Worker
+^    744 | run                              in java.lang.Thread
+
+Caused by I2PSessionException: [I2PSessionMuxedImpl #57024]: Cannot connect to the router on [internal connection]:0
+->>  527 | connect                          in net.i2p.client.I2PSessionImpl
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|     56 | init                             in cryptmeme.I2PClientService
+|     10 | doCall . . . . . . . . . . . . . in BootStrap$_closure1
+|    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
+|    301 | executeForEnvironment . . . . .  in     ''
+|    277 | executeForCurrentEnvironment     in     ''
+|    262 | run . . . . . . . . . . . . . .  in java.util.concurrent.FutureTask
+|   1145 | runWorker                        in java.util.concurrent.ThreadPoolExecutor
+|    615 | run . . . . . . . . . . . . . .  in java.util.concurrent.ThreadPoolExecutor$Worker
+^    744 | run                              in java.lang.Thread
+
+Caused by IOException: No tunnels built after waiting 5 minutes. Your network connection may be down, or there is severe network congestion.
+->>  504 | connect                          in net.i2p.client.I2PSessionImpl
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+|     56 | init                             in cryptmeme.I2PClientService
+|     10 | doCall . . . . . . . . . . . . . in BootStrap$_closure1
+|    308 | evaluateEnvironmentSpecificBlock in grails.util.Environment
+|    301 | executeForEnvironment . . . . .  in     ''
+|    277 | executeForCurrentEnvironment     in     ''
+|    262 | run . . . . . . . . . . . . . .  in java.util.concurrent.FutureTask
+|   1145 | runWorker                        in java.util.concurrent.ThreadPoolExecutor
+|    615 | run . . . . . . . . . . . . . .  in java.util.concurrent.ThreadPoolExecutor$Worker
+^    744 | run                              in java.lang.Thread
+
+WARNING: Resource name [jcpuid-x86-windows.dll] was not found
+WARNING: Native CPUID library jcpuid not loaded - will not be able to read CPU information using CPUID
+INFO: Resource name [jbigi-windows-athlon64_64.dll] was not found
+INFO: Resource name [jbigi-windows-athlon64.dll] was not found
+INFO: Resource name [jbigi-windows-none_64.dll] was not found
+INFO: Resource name [jbigi-windows-none.dll] was not found
+WARNING: Native BigInteger library jbigi not loaded - using pure Java - poor performance may result - see http://www.i2p2.i2p/jbigi for help
+Setting up I2P Client Service...
+WARNING: Resource name [jcpuid-x86-windows.dll] was not found
+WARNING: Native CPUID library jcpuid not loaded - will not be able to read CPU information using CPUID
+INFO: Resource name [jbigi-windows-athlon64_64.dll] was not found
+INFO: Resource name [jbigi-windows-athlon64.dll] was not found
+INFO: Resource name [jbigi-windows-none_64.dll] was not found
+INFO: Resource name [jbigi-windows-none.dll] was not found
+WARNING: Native BigInteger library jbigi not loaded - using pure Java - poor performance may result - see http://www.i2p2.i2p/jbigi for help
+Setting up I2P Client Service...
+Failed to connect, trying again:
+net.i2p.client.I2PSessionException: [I2PSessionMuxedImpl #60724]: Cannot connect to the router on [internal connection]:0

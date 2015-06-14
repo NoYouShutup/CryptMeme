@@ -43,7 +43,9 @@ class I2PTunnelService implements InitializingBean {
 	 * All this really does is create an I2P endpoint that forwards all requests to the local grails instance.
 	 * Theoretically, one could use this to keep a cryptmeme instance running and access it from any web browser
 	 * through I2P, as long as the instance was actually running.
-	 */
+	 *
+	 *
+	 *commented out because I don't think this is how we should do things.
 	public void afterPropertiesSet() throws Exception {
 		// set up the I2P tunnel service.
 		Properties props = new Properties();
@@ -64,6 +66,9 @@ class I2PTunnelService implements InitializingBean {
 				println "Error trying to shut down the tunnel service: " + e.getMessage()
 			}
 		}
+	} */
+	public void afterPropertiesSet() throws Exception {
+		
 	}
 
 	def serviceMethod() {
