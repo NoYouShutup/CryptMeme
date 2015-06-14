@@ -17,6 +17,7 @@ class I2PClientService implements InitializingBean, I2PSessionListener {
 	public static final String PRIVATE_KEY_FILE = "./myDest.key";
 	public static I2PSession session;
 	public static Router router;
+	public static boolean isRunning = false;
 	
 	static scope = "singleton";
 	
@@ -72,6 +73,7 @@ class I2PClientService implements InitializingBean, I2PSessionListener {
 		// _dgram_maker = new I2PDatagramMaker(session);
 		me = session.getMyDestination();
 		print "I2P Client Service set up. My destination:\n" + me.toBase64();
+		isRunning = true;
 	}
 
 	def serviceMethod() {

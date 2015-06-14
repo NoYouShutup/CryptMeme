@@ -7,13 +7,7 @@ class PostController {
 
 	def I2PClientService
 
-	def index() { }
-	
-	def sendTest() {
-		def friendId = params["friendId"]
+	def index() {
 		
-		Destination dest = new Destination(friendId);
-		((I2PSession)I2PClientService.session).sendMessage(dest, new String("Test message").getBytes());
-		render "Message sent";
 	}
 }
