@@ -1,0 +1,84 @@
+#!/bin/sh
+
+# I2P Installer - Installs and pre-configures I2P.
+#
+# osid
+# 2004 The I2P Project
+# https://geti2p.net
+# This code is public domain.
+#
+# author: hypercubus
+#
+# Identifies the host OS by returning the corresponding standardized ID string:
+#
+#     debian   = Debian
+#     fedora   = Fedora
+#     freebsd  = FreeBSD
+#     gentoo   = Gentoo
+#     linux    = unidentified Linux distro
+#     mandrake = Mandrake
+#     osx      = Mac OS X
+#     redhat   = Red Hat
+#     solaris  = Solaris
+#     suse     = SuSE
+#     openbsd  = OpenBSD
+#     netbsd   = NetBSD
+#     unknown  = OS could not be determined
+
+HOST_OS=`uname -a`
+
+if [ "X$HOST_OS" = "X" ]; then
+    echo unknown
+    exit 0
+fi
+
+DARWIN=`echo "$HOST_OS" | grep Darwin`
+MAC=`echo "$HOST_OS" | grep Mac`
+KFREEBSD=`echo "$HOST_OS" | grep kFreeBSD`
+FREEBSD=`echo "$HOST_OS" | grep FreeBSD`
+LINUX=`echo "$HOST_OS" | grep Linux`
+SOLARIS=`echo "$HOST_OS" | grep Solaris`
+SUNOS=`echo "$HOST_OS" | grep SunOS`
+NETBSD=`echo "$HOST_OS" |grep NetBSD`
+OPENBSD=`echo "$HOST_OS" |grep OpenBSD`
+
+if [ ! "X$DARWIN" = "X" -o ! "X$MAC" = "X" ]; then
+    echo osx
+elif [ ! "X$KFREEBSD" = "X" ]; then
+    echo kfreebsd
+elif [ ! "X$FREEBSD" = "X" ]; then
+    echo freebsd
+elif [ ! "X$NETBSD" = "X" ]; then
+    echo netbsd
+elif [ ! "X$OPENBSD" = "X" ]; then
+    echo openbsd
+elif [ ! "X$LINUX" = "X" ]; then
+
+    LINUX_DISTRO=`cat /proc/version`
+    DEBIAN=`echo $LINUX_DISTRO | grep Debian`
+    FEDORA=`echo $LINUX_DISTRO | grep Fedora`
+    GENTOO=`echo $LINUX_DISTRO | grep Gentoo`
+    MANDRAKE=`echo $LINUX_DISTRO | grep Mandrake`
+    REDHAT=`echo $LINUX_DISTRO | grep "Red Hat"`
+    SUSE=`echo $LINUX_DISTRO | grep Suse`
+
+    if [ ! "X$DEBIAN" = "X" ]; then
+        echo debian
+    elif [ ! "X$FEDORA" = "X" ]; then
+        echo fedora
+    elif [ ! "X$GENTOO" = "X" ]; then
+        echo gentoo
+    elif [ ! "X$MANDRAKE" = "X" ]; then
+        echo mandrake
+    elif [ ! "X$REDHAT" = "X" ]; then
+        echo redhat
+    elif [ ! "X$SUSE" = "X" ]; then
+        echo suse
+    else
+        echo linux
+    fi
+elif [ ! "X$SOLARIS" = "X" -o ! "X$SUNOS" = "X" ]; then
+    echo solaris
+else
+    echo unknown
+fi

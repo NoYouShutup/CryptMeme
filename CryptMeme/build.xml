@@ -1,0 +1,2058 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project basedir="." default="all" name="i2p">
+
+    <!-- Include property files so that values can be easily overridden.
+         Users should create an override.properties file to make changes.
+     -->
+    <property file="override.properties"/>
+    <property file="build.properties"/>
+
+    <!-- You probably don't want to change anything from here down -->
+    <target name="help" depends="all" />
+    <target name="all" >
+        <echo message="Useful targets: " />
+        <echo message="  pkg:       distclean then package everything up (updater, installer)" />
+        <echo message="  dist:      pkg and javadoc" />
+        <echo message="  dist200:   pkg, updater200, and javadoc" />
+        <echo message="  installer: build the GUI installer" />
+        <echo message="  installer-freebsd: build the GUI installer (FreeBSD only)" />
+        <echo message="  installer-linux: build the GUI installer (Linux only)" />
+        <echo message="  installer-osx: build the GUI installer (OSX only)" />
+        <echo message="  installer-windows: build the GUI installer (Windows only)" />
+        <echo message="  installer-nowindows: build the GUI installer (all but Windows)" />
+        <echo message="  tarball:   tar the full install into i2p.tar.bz2 (extracts to build a new clean install)" />
+        <echo message="  updater:   Package the built files in i2pupdate.zip (extracts safely over existing installs)" />
+        <echo message="  updater200: Updater compressed with pack200 (creates i2pupdate200.zip, 60% smaller)" />
+        <echo message="  signed-updater200: Signed updater compressed with pack200 (creates i2pupdate.su3, 60% smaller)" />
+        <echo message="  updaterWithJavadoc: updater including the javadocs, for display in the console" />
+        <echo message="  updater200WithJavadoc: updater including the javadocs, for display in the console (creates i2pupdate200.zip)" />
+        <echo message="  signed-updater200WithJavadoc: Signed updater including the javadocs, for display in the console (creates i2pupdate.su3)" />
+        <echo message="  updaterWithJavadocAndJetty: updater including the javadocs, for display in the console, and Jetty " />
+        <echo message="  updater200WithJavadocAndJetty: updater including the javadocs, for display in the console, and Jetty (creates i2pupdate200.zip)" />
+        <echo message="  signed-updater200WithJavadocAndJetty: Signed updater including the javadocs, for display in the console, and Jetty (creates i2pupdate.su3)" />
+        <echo message="  updaterWithJetty: Updater including Jetty" />
+        <echo message="  updater200withJetty: Updater including Jetty" />
+        <echo message="  updater200withJetty: Updater including Jetty" />
+        <echo message="  signed-updater200withJetty: Signed updater including Jetty" />
+        <echo message="  updaterWithJettyFixes: updater including local jetty patches" />
+        <echo message="  updaterWithGeoIP: updater including GeoIP Files" />
+        <echo message="  updaterWithJettyFixesAndGeoIP" />
+        <echo message="  updaterWithJettyFixesAndJbigi" />
+        <echo message="  updaterSmall:   updater with the essentials only - no SAM, i2psnark, SusiMail, SusiDNS, or history.txt" />
+        <echo message="  updaterRouter:  updater with the i2p.jar and router.jar only" />
+        <echo message="  distclean: clean up all derived files" />
+        <!-- <echo message="  syndie:    generate a standalone syndie install" /> -->
+        <echo message="  desktopgui: generate a standalone desktopgui install" />
+        <echo message="  i2psnark:  generate a standalone i2psnark install" />
+        <echo message="  justBOB:  generate a standalone BOB-one.jar" />
+        <echo message="  javadoc:   generate javadoc for the entire project into ./build/javadoc and ./javadoc.zip" />
+        <echo message="  javadoc-test: Javadocs for unit test classes (build/javadoc-test)" />
+        <echo message="  slackpkg:  generate Slackware package in ./Slackware/i2p" />
+        <echo message="  debianhowto: instructions on building Debian packages" />
+        <echo message="  debian: generate Debian packages in ../" />
+        <echo message="          run &quot;ant debianhowto&quot; for instructions" />
+        <echo message="  debian-clean: rollback debian specific patches and run the &quot;distclean&quot; target (done automatically at the end of the &quot;debian&quot; target)" />
+        <!-- <echo message="  debianrepo: build a Debian repository (reprepro required)" /> -->
+        <echo message="  poupdate: update the .po files for translators" />
+        <echo message="  pkg-portable-win32:  build a minimum portable version for win32" />
+   </target>
+    <target name="debianhowto">
+            <echo message="To build debian packages, you must make sure that you have" />
+            <echo message="the necessary build-dependencies installed." />
+            <echo message="The packages required to build can be found in the file "/>
+            <echo message="&quot;debian/control&quot; in the &quot;Build-Depends&quot; field."/>
+            <echo message="In addition to those packages, be sure to install &quot;fakeroot&quot;,"/>
+            <echo message="&quot;quilt&quot; and &quot;build-essential&quot;!" />
+            <echo message="" />
+            <echo message="The following command will install all of the dependencies for you:" />
+            <echo message=" " />
+            <echo message="apt-get install debhelper ant debconf default-jdk gettext libgmp3-dev po-debconf fakeroot build-essential \" />
+            <echo message="                   quilt libcommons-logging-java dh-apparmor" />
+            <echo message=" " />
+            <echo message="Once the dependencies are installed, run &quot;ant debian&quot;"/>
+            <echo message="to patch the source and build the packages." />
+    </target>
+
+    <macrodef name="gpgsign">
+        <attribute name="file" />
+        <sequential>
+            <delete file="@{file}.sig" quiet="true" />
+            <exec executable="gpg" failonerror="true">
+                <arg value="--default-key" />
+                <arg value="${release.gpg.keyid}" />
+                <arg value="-b" />
+                <arg value="@{file}" />
+            </exec>
+            <chmod type="file" perm="444">
+                <fileset dir="${basedir}">
+                    <include name="@{file} @{file}.sig" />
+                </fileset>
+            </chmod>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="mktorrent">
+        <attribute name="file" />
+        <sequential>
+            <delete file="@{file}.torrent" quiet="true"/>
+            <java classname="org.klomp.snark.Storage" fork="true" failonerror="true">
+                <classpath>
+                    <pathelement location="build/i2p.jar" />
+                    <pathelement location="build/i2psnark.jar" />
+                </classpath>
+                <arg value="@{file}" />
+                <arg value="http://tracker2.postman.i2p/announce.php" />
+            </java>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="sha256sum">
+        <attribute name="file" />
+        <sequential>
+            <!--
+                 Note: "local" only works with ant 1.8+. This limitation shouldn't be
+                 a big deal since this macro is only called by the release
+                 target.
+             -->
+            <local name="file-sum"/>
+            <checksum format="MD5SUM" file="@{file}" property="file-sum" algorithm="sha-256"/>
+            <echo message="${file-sum}  @{file}" />
+        </sequential>
+    </macrodef>
+
+    <macrodef name="sudsign">
+        <attribute name="infile" />
+        <attribute name="outfile" />
+        <sequential>
+            <input message="Enter private signing key file:" addproperty="release.privkey" />
+            <fail message="You must enter an existing file path." >
+                <condition>
+                    <or>
+                        <equals arg1="${release.privkey}" arg2=""/>
+                        <not>
+                            <length file="${release.privkey}" when="greater" length="0" />
+                        </not>
+                    </or>
+                </condition>
+            </fail>
+            <echo message="Key file is ${release.privkey}" />
+            <java classname="net.i2p.crypto.TrustedUpdate" fork="true" failonerror="true">
+                <classpath>
+                    <pathelement location="build/i2p.jar" />
+                </classpath>
+                <arg value="sign" />
+                <arg value="@{infile}" />
+                <arg value="@{outfile}" />
+                <arg value="${release.privkey}" />
+                <arg value="${release.number}" />
+            </java>
+            <echo message="Verify version and VALID signature:" />
+            <java classname="net.i2p.crypto.TrustedUpdate" fork="true" failonerror="true">
+                <classpath>
+                    <pathelement location="build/i2p.jar" />
+                </classpath>
+                <arg value="verifysig" />
+                <arg value="@{outfile}" />
+            </java>
+            <java classname="net.i2p.crypto.TrustedUpdate" fork="true" failonerror="true">
+                <classpath>
+                    <pathelement location="build/i2p.jar" />
+                </classpath>
+                <arg value="verifyversion" />
+                <arg value="@{outfile}" />
+            </java>
+            <java classname="net.i2p.crypto.TrustedUpdate" fork="true" failonerror="true">
+                <classpath>
+                    <pathelement location="build/i2p.jar" />
+                </classpath>
+                <arg value="showversion" />
+                <arg value="@{outfile}" />
+            </java>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="su3sign">
+        <attribute name="infile" />
+        <attribute name="outfile" />
+        <attribute name="sigtype" />
+        <attribute name="su3.ver" />
+        <sequential>
+        <input message="Enter su3 private signing key store:" addproperty="release.privkey.su3" />
+        <fail message="You must enter an existing file path." >
+            <condition>
+                <or>
+                    <equals arg1="${release.privkey.su3}" arg2=""/>
+                    <not>
+                        <length file="${release.privkey.su3}" when="greater" length="0" />
+                    </not>
+                </or>
+            </condition>
+        </fail>
+        <input message="Enter key name (you@mail.i2p):" addproperty="release.signer.su3" />
+        <fail message="You must enter a name." >
+            <condition>
+                <equals arg1="${release.signer.su3}" arg2=""/>
+            </condition>
+        </fail>
+        <input message="Enter key password for ${release.signer.su3}:" addproperty="release.password.su3" />
+        <fail message="You must enter a password." >
+            <condition>
+                <equals arg1="${release.password.su3}" arg2=""/>
+            </condition>
+        </fail>
+            <java classname="net.i2p.crypto.SU3File" inputstring="${release.password.su3}" fork="true" failonerror="true">
+                <classpath>
+                    <pathelement location="build/i2p.jar" />
+                </classpath>
+                <arg value="sign" />
+                <arg value="-c" />
+                <arg value="@{sigtype}" />
+                <arg value="-t" />
+                <arg value="RSA_SHA512_4096" />
+                <arg value="@{infile}" />
+                <arg value="@{outfile}" />
+                <arg value="${release.privkey.su3}" />
+                <arg value="@{su3.ver}" />
+                <arg value="${release.signer.su3}" />
+            </java>
+            <echo message="Verify version and VALID signature:" />
+            <java classname="net.i2p.crypto.SU3File" fork="true" failonerror="true">
+                <classpath>
+                    <pathelement location="build/i2p.jar" />
+                </classpath>
+                <!-- set base dir so it can find the pubkey cert -->
+                <jvmarg value="-Di2p.dir.base=installer/resources" />
+                <arg value="verifysig" />
+                <arg value="@{outfile}" />
+            </java>
+            <java classname="net.i2p.crypto.SU3File" fork="true" failonerror="true">
+                <classpath>
+                    <pathelement location="build/i2p.jar" />
+                </classpath>
+                <!-- set base dir so it can find the pubkey cert -->
+                <jvmarg value="-Di2p.dir.base=installer/resources" />
+                <arg value="showversion" />
+                <arg value="@{outfile}" />
+            </java>
+        </sequential>
+    </macrodef>
+    <target name="dist" depends="pkg, javadoc" />
+    <target name="dist200" depends="pkg200, javadoc" />
+    <target name="build" depends="build2">
+        <!-- so we don't build standalone for the updater -->
+        <!-- This builds apps/i2psnark/java/i2psnark-standalone.zip,
+          -   which we don't distribute anywhere...
+        <ant dir="apps/i2psnark/java/" target="standalone" />
+        -->
+    </target>
+    <target name="build2" depends="builddep, jar, buildWEB" />
+    <target name="buildSmall" depends="builddepSmall, jarSmall, buildWEB" />
+    <target name="buildclean" depends="distclean, build" />
+
+    <target name="builddep" depends="builddepSmall, buildBOB, buildSAM, buildSusiMail, buildSusiDNS, buildI2PSnark" />
+
+    <target name="builddepSmall" depends="buildrouter, buildSystray, buildDesktopGui, buildRouterConsole, buildStreaming, buildI2PTunnel, buildAddressbook" />
+
+    <!-- start of buildX, one for each sub-build.xml.
+         Do not put ant tasks in the sub-build.xmls anymore,
+         so the build will go faster.
+      -->
+
+    <target name="-setepoch">
+        <script language="javascript">
+            <![CDATA[
+              property = project.setProperty("epoch",Math.floor((new Date()).getTime()/1000));
+            ]]>
+        </script>
+    </target>
+
+    <target name="buildBOB" depends="buildStreaming" >
+        <ant dir="apps/BOB/" target="jar" />
+        <copy file="apps/BOB/dist/BOB.jar" todir="build/" />
+    </target>
+
+    <target name="buildSAM" depends="buildStreaming" >
+        <ant dir="apps/sam/java/" target="jar" />
+        <copy file="apps/sam/java/build/sam.jar" todir="build/" />
+    </target>
+
+    <target name="buildSusiMail" depends="buildCore, buildJetty" >
+        <ant dir="apps/susimail/" target="war" />
+        <copy file="apps/susimail/susimail.war" todir="build/" />
+    </target>
+
+    <target name="buildSusiDNS" depends="buildCore, buildJetty" >
+        <ant dir="apps/susidns/src" target="all" />
+        <copy file="apps/susidns/src/susidns.war" todir="build/" />
+    </target>
+
+    <target name="buildI2PSnark" depends="buildStreaming, buildJetty" >
+        <ant dir="apps/i2psnark/java/" target="war" />
+        <copy file="apps/i2psnark/i2psnark.war" todir="build/" />
+        <copy file="apps/i2psnark/java/build/i2psnark.jar" todir="build/" />
+    </target>
+
+    <!-- jar (not war) for Android -->
+    <target name="buildAddressbookJar" depends="buildCore" >
+        <ant dir="apps/addressbook/" target="jar" />
+        <copy file="apps/addressbook/dist/addressbook.jar" todir="build/" />
+    </target>
+
+    <target name="buildAddressbook" depends="buildCore, buildJetty" >
+        <ant dir="apps/addressbook/" target="war" />
+        <copy file="apps/addressbook/dist/addressbook.war" todir="build/" />
+    </target>
+
+    <!-- Both jars and no war, for Android -->
+    <target name="buildI2PTunnelJars" depends="buildStreaming" >
+        <ant dir="apps/i2ptunnel/java/" target="uiJar" />
+        <copy file="apps/i2ptunnel/java/build/i2ptunnel.jar" todir="build/" />
+        <copy file="apps/i2ptunnel/java/build/i2ptunnel-ui.jar" todir="build/" />
+    </target>
+
+    <target name="buildI2PTunnel" depends="buildStreaming, buildJetty" >
+        <ant dir="apps/i2ptunnel/java/" target="build" />
+        <copy file="apps/i2ptunnel/java/build/i2ptunnel.jar" todir="build/" />
+        <copy file="apps/i2ptunnel/java/build/i2ptunnel.war" todir="build/" />
+    </target>
+
+    <target name="buildDesktopGui" depends="buildCore, buildrouter" >
+<!--
+        <ant dir="apps/desktopgui" target="clean" />
+-->
+        <ant dir="apps/desktopgui" target="jar" />
+        <copy file="apps/desktopgui/dist/desktopgui.jar" todir="build/" />
+    </target>
+
+    <target name="buildRouterConsole" depends="buildrouter, buildSystray, buildDesktopGui, buildJetty" >
+        <ant dir="apps/routerconsole/java/" target="jar" />
+    </target>
+
+    <!-- newsxml.jar only (subset of routerconsole, no war) for Android -->
+    <target name="buildNewsXMLJar" depends="buildRouter" >
+        <ant dir="apps/routerconsole/java/" target="newsxmljar" />
+    </target>
+
+    <target name="buildJetty" depends="buildCore" >
+        <ant dir="apps/jetty" target="build" />
+        <copy todir="build/" >
+            <fileset dir="apps/jetty/jettylib" excludes="ant.jar" />
+        </copy>
+    </target>
+
+    <target name="buildSystray" depends="buildCore" >
+        <ant dir="apps/systray/java/" target="jar" />
+        <copy file="apps/systray/java/build/systray.jar" todir="build/" />
+    </target>
+
+    <target name="buildStreaming" depends="buildMinistreaming" >
+        <ant dir="apps/streaming/java/" target="jar" />
+        <copy file="apps/streaming/java/build/streaming.jar" todir="build/" />
+    </target>
+
+    <target name="buildMinistreaming" depends="buildCore" >
+        <ant dir="apps/ministreaming/java/" target="jar" />
+        <copy file="apps/ministreaming/java/build/mstreaming.jar" todir="build/" />
+    </target>
+
+    <target name="buildRouter" depends="buildrouter" />
+    <target name="buildrouter" depends="buildCore" >
+        <ant dir="router/java/" target="jar" />
+        <copy file="router/java/build/router.jar" todir="build/" />
+    </target>
+
+    <target name="buildCore" depends="buildProperties" >
+        <ant dir="core/java/" target="jar" />
+        <copy file="core/java/build/i2p.jar" todir="build/" />
+    </target>
+
+    <target name="buildJrobin" depends="buildProperties" >
+        <!-- take only what we need from the jrobin jar -->
+        <jar destfile="build/jrobin.jar" >
+            <zipfileset src="apps/jrobin/jrobin-1.5.9.1.jar"
+                        excludes="org/jrobin/cmd/ org/jrobin/convertor/ org/jrobin/inspector/" />
+            <manifest>
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="buildProperties" depends="getMtnRev, getReleaseNumber, getBuildNumber" >
+        <!-- default if not set above -->
+        <property name="workspace.version" value="unknown" />
+        <tstamp>
+            <format property="build.timestamp" pattern="yyyy-MM-dd HH:mm:ss z" timezone="UTC" locale="en" />
+        </tstamp>
+        <property name="full.version" value="${release.number}-${i2p.build.number}${build.extra}" />
+        <echo message="Building version ${full.version} (mtn rev ${workspace.version})" />
+    </target>
+
+    <target name="buildWEB" depends="buildRouterConsole" >
+        <copy file="apps/routerconsole/java/build/routerconsole.jar" todir="build/" />
+        <copy file="apps/routerconsole/java/build/routerconsole.war" todir="build/" />
+    </target>
+
+    <target name="buildTools" depends="buildrouter" >
+        <ant dir="installer/tools/java" target="jar" />
+        <copy file="installer/tools/java/build/tools.jar" todir="build/" />
+    </target>
+
+    <!-- end of sub-build.xml targets -->
+
+    <target name="checkForMtn" >
+        <available property="mtn.available" file="_MTN" type="dir" />
+    </target>
+
+    <target name="getMtnRev" depends="checkForMtn" if="mtn.available" >
+        <exec executable="mtn" outputproperty="workspace.version" errorproperty="mtn.error1" failifexecutionfails="false" >
+            <arg value="automate" />
+            <arg value="get_base_revision_id" />
+        </exec>
+    </target>
+
+    <target name="trimMtnRev" depends="getMtnRev">
+        <script language="javascript">
+            <![CDATA[
+            var MtnRev = project.getProperty("workspace.version");
+            if (MtnRev != 'unknown' && MtnRev != null) {
+                echo = project.createTask("echo");
+                var MtnShortHash = MtnRev.substring(0,8);
+                project.setProperty("MtnShortHash", MtnShortHash);
+                echo.setMessage("Trimmed hash: " + MtnShortHash);
+                echo.perform();
+            } else {
+                project.setProperty("MtnShortHash", 'unknown');
+            }
+            ]]>
+        </script>
+    </target>
+
+    <target name="checkIfBumped">
+        <exec executable="mtn" outputproperty="bumped" errorproperty="mtn.error2" failifexecutionfails="false" >
+            <arg value="ls" />
+            <arg value="ch" />
+            <arg value="router/java/src/net/i2p/router/RouterVersion.java" />
+        </exec>
+        <condition property="bumped.already">
+            <not>
+                <equals arg1="${bumped}" arg2=""/>
+            </not>
+        </condition>
+    </target>
+
+    <target name="bump" depends="bumpBuild" />
+    <target name="bumpBuild" depends="checkIfBumped, getBuildNumber" unless="bumped.already">
+        <script language="javascript">
+            <![CDATA[
+            var newBuildNumber = (Number(project.getProperty("i2p.build.number")) + 1);
+            if (newBuildNumber != 'unknown' && newBuildNumber != null) {
+                echo = project.createTask("echo");
+                project.setProperty("new.i2p.build.number", newBuildNumber);
+                echo.setMessage("Build number is now: " + newBuildNumber);
+                echo.perform();
+            }
+            ]]>
+        </script>
+        <replaceregexp byline="true" file="router/java/src/net/i2p/router/RouterVersion.java"
+            match='(^\s+public\s+final\s+static\s+long\s+BUILD\s+=\s+)[0-9]+;' replace='\1${new.i2p.build.number};'/>
+    </target>
+
+    <condition property="noExe">
+        <not>
+            <!-- We only have launch4j binaries for the following systems -->
+            <and>
+                <or>
+                    <os arch="x86" />
+                    <os arch="i386" />
+                    <os arch="i586" />
+                    <os arch="i686" />
+                    <os arch="amd64" />
+                    <os arch="x86_64" />
+                </or>
+                <or>
+                    <os name="Linux" />
+                    <os family="windows" />
+                </or>
+            </and>
+        </not>
+    </condition>
+
+    <!-- this makes an empty build/launchi2p.jar and the build/i2p.exe for the no-wrapper windows startup, if possible -->
+    <target name="buildexe" depends="buildProperties, launch4j" unless="noExe">
+        <echo message="See the file &quot;build.properties&quot; if this step fails." />
+        <jar destfile="./build/launchi2p.jar">
+            <manifest>
+                <attribute name="Main-Class" value="net.i2p.router.RouterLaunch" />
+                <attribute name="Class-Path" value="lib/i2p.jar lib/router.jar lib/jbigi.jar lib/BOB.jar lib/sam.jar lib/mstreaming.jar lib/streaming.jar lib/routerconsole.jar lib/i2ptunnel.jar lib/org.mortbay.jetty.jar lib/javax.servlet.jar lib/jasper-runtime.jar lib/commons-logging.jar lib/commons-el.jar lib/wrapper.jar lib/systray.jar lib/systray4j.jar lib/desktopgui.jar lib/i2psnark.jar lib/jrobin.jar lib/jstl.jar lib/standard.jar lib/jetty-continuation.jar lib/jetty-deploy.jar lib/jetty-http.jar lib/jetty-i2p.jar lib/jetty-io.jar lib/jetty-rewrite-handler.jar lib/jetty-security.jar lib/jetty-servlet.jar lib/jetty-servlets.jar lib/jetty-start.jar lib/jetty-util.jar lib/jetty-webapp.jar lib/jetty-xml.jar" />
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+            </manifest>
+        </jar>
+        <!-- now the standalone launcher exe -->
+        <launch4j configFile="./installer/i2pstandalone.xml" />
+        <!-- thazzit -->
+    </target>
+
+    <target name="launch4j">
+        <taskdef name="launch4j"
+                 classname="net.sf.launch4j.ant.Launch4jTask"
+                 classpath="${basedir}/installer/lib/launch4j/launch4j.jar:${basedir}/installer/lib/launch4j/lib/xstream.jar" />
+     </target>
+
+     <!--
+          the files are now copied to the build directory
+          in the build* targets
+      -->
+     <target name="jar" depends="jarSmall" />
+     <target name="jarSmall" depends="builddepSmall, buildJrobin" />
+
+    <!-- Custom target to collect the jars that I2P-Bote needs to compile, so it can compile from source. -->
+    <target name="jarBote" depends="buildRouter, buildStreaming, buildJetty" >
+        <copy file="apps/susidns/src/WEB-INF/lib/jstl.jar" todir="build/" />
+        <copy file="apps/susidns/src/WEB-INF/lib/standard.jar" todir="build/" />
+    </target>
+
+    <target name="jbigi-list-changes" depends="checkForMtn" if="mtn.available">
+        <exec executable="mtn" outputproperty="workspace.changes.jbigi" errorproperty="mtn.error.jbigi" failifexecutionfails="false" >
+            <arg value="list" />
+            <arg value="changed" />
+            <arg value="installer/lib/jbigi" />
+        </exec>
+        <!-- \n in an attribute value generates an invalid manifest -->
+        <exec executable="tr" inputstring="${workspace.changes.jbigi}" outputproperty="workspace.changes.jbigi.tr" errorproperty="mtn.error2" failifexecutionfails="false" >
+            <arg value="-s" />
+            <arg value="&quot;[:space:]&quot;" />
+            <arg value="," />
+        </exec>
+    </target>
+
+    <target name="jbigi" depends="buildProperties, jbigi-list-changes">
+        <!-- set if unset -->
+        <property name="workspace.changes.jbigi.tr" value="" />
+        <mkdir dir="./build" />
+        <jar destfile="build/jbigi.jar" whenmanifestonly="fail" >
+            <fileset dir="installer/lib/jbigi" includes="*.so *.dll *.jnilib" />
+            <manifest>
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+                <attribute name="Workspace-Changes" value="${workspace.changes.jbigi.tr}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="jbigi-nowindows" depends="buildProperties, jbigi-list-changes">
+        <!-- set if unset -->
+        <property name="workspace.changes.jbigi.tr" value="" />
+        <jar destfile="build/jbigi.jar" whenmanifestonly="fail" >
+            <fileset dir="installer/lib/jbigi" includes="*.so *.jnilib" />
+            <manifest>
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+                <attribute name="Workspace-Changes" value="${workspace.changes.jbigi.tr}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- Now system-specific jbigis in alphabetical order -->
+    <target name="jbigi-freebsd-only"  depends="buildProperties, jbigi-list-changes">
+        <!-- set if unset -->
+        <property name="workspace.changes.jbigi.tr" value="" />
+        <jar destfile="build/jbigi.jar"  whenmanifestonly="fail" >
+            <fileset dir="installer/lib/jbigi" includes="*bsd*.so" />
+            <manifest>
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+                <attribute name="Workspace-Changes" value="${workspace.changes.jbigi.tr}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="jbigi-linux-only"  depends="buildProperties, jbigi-list-changes">
+        <!-- set if unset -->
+        <property name="workspace.changes.jbigi.tr" value="" />
+        <jar destfile="build/jbigi.jar"  whenmanifestonly="fail" >
+            <fileset dir="installer/lib/jbigi" includes="*linux*.so" />
+            <manifest>
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+                <attribute name="Workspace-Changes" value="${workspace.changes.jbigi.tr}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="jbigi-linux-x86-only"  depends="buildProperties, jbigi-list-changes">
+        <!-- set if unset -->
+        <property name="workspace.changes.jbigi.tr" value="" />
+        <jar destfile="build/jbigi.jar"  whenmanifestonly="fail" >
+            <fileset dir="installer/lib/jbigi" includes="*linux*.so" excludes="*linux-arm*.so,*linux-ppc*.so" />
+            <manifest>
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+                <attribute name="Workspace-Changes" value="${workspace.changes.jbigi.tr}" />
+            </manifest>
+        </jar>
+    </target>
+
+
+    <target name="jbigi-linux-nonx86-only"  depends="buildProperties, jbigi-list-changes">
+        <!-- set if unset -->
+        <property name="workspace.changes.jbigi.tr" value="" />
+        <jar destfile="build/jbigi.jar"  whenmanifestonly="fail" >
+            <fileset dir="installer/lib/jbigi" includes="*linux-arm*.so,*linux-ppc*.so" />
+            <manifest>
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+                <attribute name="Workspace-Changes" value="${workspace.changes.jbigi.tr}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="jbigi-osx-only"  depends="buildProperties, jbigi-list-changes" >
+        <!-- set if unset -->
+        <property name="workspace.changes.jbigi.tr" value="" />
+        <jar destfile="build/jbigi.jar"  whenmanifestonly="fail" >
+            <fileset dir="installer/lib/jbigi" includes="*.jnilib" />
+            <manifest>
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+                <attribute name="Workspace-Changes" value="${workspace.changes.jbigi.tr}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="jbigi-windows-only" depends="buildProperties, jbigi-list-changes" >
+        <!-- set if unset -->
+        <property name="workspace.changes.jbigi.tr" value="" />
+        <jar destfile="build/jbigi.jar" whenmanifestonly="fail" >
+            <fileset dir="installer/lib/jbigi" includes="*windows*.dll" />
+            <manifest>
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+                <attribute name="Workspace-Changes" value="${workspace.changes.jbigi.tr}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- the apps need to compile the jsps to poupdate -->
+    <target name="poupdate" depends="buildRouter, buildStreaming, buildSystray, buildJetty, buildDesktopGui" >
+        <echo message="Setting environment variable LG2 to a lang code (eg: de,zh,nl etc)" />
+        <echo message=" will restrict language update to the language you specified, leaving other language untact." />
+        <ant dir="apps/routerconsole/java/" >
+            <target name="poupdate" />
+            <target name="poupdate-news" />
+            <target name="poupdate-countries" />
+        </ant>
+        <ant dir="apps/i2psnark/java/" target="poupdate" />
+        <ant dir="apps/i2ptunnel/java/" >
+            <target name="poupdate" />
+            <target name="poupdate-proxy" />
+        </ant>
+        <ant dir="apps/susidns/src/" target="poupdate" />
+        <ant dir="apps/susimail/" target="poupdate" />
+        <ant dir="apps/desktopgui" target="poupdate" />
+        <ant dir="installer/resources/locale" target="poupdate" />
+        <ant dir="apps/ministreaming/java" target="poupdate" />
+    </target>
+
+    <condition property="no.bundle">
+        <isfalse value="${require.gettext}" />
+    </condition>
+
+    <target name="prep-script-translation" unless="no.bundle" >
+        <!-- script translation added in 0.8.13, enabled in 0.9.5. -->
+        <ant dir="installer/resources/locale" target="bundle" />
+        <copy todir="pkg-temp/locale/">
+            <fileset dir="installer/resources/locale/mo/" />
+        </copy>
+    </target>
+
+    <target name="javadoc" depends="getReleaseNumber, getBuildNumber" >
+        <ant dir="apps/jetty" target="ensureJettylib" />
+        <mkdir dir="./build" />
+        <mkdir dir="./build/javadoc" />
+        <javadoc access="package"
+            destdir="./build/javadoc"
+            packagenames="*"
+            use="true"
+            splitindex="true"
+            doctitle="I2P Javadocs for Release ${release.number} Build ${i2p.build.number}${build.extra}"
+            windowtitle="I2P Anonymous Network - Java Documentation - Version ${release.number}">
+            <group title="Core SDK (i2p.jar)" packages="net.i2p:net.i2p.*:net.i2p.client:net.i2p.client.*:net.i2p.internal:net.i2p.internal.*:freenet.support.CPUInformation:org.bouncycastle.oldcrypto:org.bouncycastle.oldcrypto.*:gnu.crypto.*:gnu.getopt:gnu.gettext:com.nettgryppa.security:net.metanotion:net.metanotion.*:org.apache.http.conn.ssl:org.apache.http.conn.util:org.apache.http.util" />
+            <group title="Streaming Library" packages="net.i2p.client.streaming:net.i2p.client.streaming.impl" />
+            <group title="Router" packages="net.i2p.router:net.i2p.router.*:net.i2p.data.i2np:net.i2p.data.router:org.cybergarage:org.cybergarage.*:org.freenetproject:org.xlattice.crypto.filters" />
+            <group title="Router Console" packages="net.i2p.router.web:net.i2p.router.update:net.i2p.router.news" />
+            <!-- apps and bridges starting here, alphabetical please -->
+            <group title="Addressbook Application" packages="net.i2p.addressbook" />
+            <group title="BOB Bridge" packages="net.i2p.BOB" />
+            <group title="BOB Demos" packages="net.i2p.BOB.Demos.echo.echoclient:net.i2p.BOB.Demos.echo.echoserver" />
+            <group title="Desktopgui Application" packages="net.i2p.desktopgui:net.i2p.desktopgui.*" />
+            <group title="I2PSnark Application" packages="org.klomp.snark:org.klomp.snark.*" />
+            <group title="I2PTunnel Application" packages="net.i2p.i2ptunnel:net.i2p.i2ptunnel.*" />
+            <group title="Installer Utilities" packages="net.i2p.installer" />
+            <group title="Jetty Utilities" packages="net.i2p.jetty:net.i2p.servlet:net.i2p.servlet.*:org.mortbay.servlet:org.mortbay.util" />
+            <group title="SAM Bridge" packages="net.i2p.sam" />
+            <group title="SAM Demos" packages="net.i2p.sam.client" />
+            <group title="SusiDNS Application" packages="i2p.susi.dns" />
+            <group title="SusiMail Application" packages="i2p.susi.webmail:i2p.susi.webmail.*:i2p.susi.debug:i2p.susi.util" />
+            <group title="Systray Application" packages="net.i2p.apps.systray" />
+            <sourcepath>
+                <pathelement location="core/java/src" />
+                <pathelement location="router/java/src" />
+                <pathelement location="apps/ministreaming/java/src" />
+                <pathelement location="apps/streaming/java/src" />
+                <pathelement location="apps/i2ptunnel/java/src" />
+                <pathelement location="apps/systray/java/src" />
+                <pathelement location="apps/desktopgui/src" />
+                <pathelement location="apps/routerconsole/java/src" />
+                <pathelement location="apps/addressbook/java/src" />
+                <pathelement location="apps/i2psnark/java/src" />
+                <pathelement location="apps/sam/java/src" />
+                <pathelement location="apps/BOB/src" />
+                <pathelement location="apps/BOB/Demos/echo/echoclient/src" />
+                <pathelement location="apps/BOB/Demos/echo/echoserver/src" />
+                <pathelement location="apps/susidns/src/java/src" />
+                <pathelement location="apps/susimail/src/src" />
+                <pathelement location="apps/jetty/java/src" />
+                <pathelement location="installer/java/src" />
+            </sourcepath>
+            <classpath>
+                <pathelement location="apps/jetty/jettylib/org.mortbay.jetty.jar" />
+                <pathelement location="apps/jetty/jettylib/javax.servlet.jar" />
+                <pathelement location="apps/jetty/jettylib/jetty-http.jar" />
+                <pathelement location="apps/jetty/jettylib/jetty-security.jar" />
+                <pathelement location="apps/jetty/jettylib/jetty-servlet.jar" />
+                <pathelement location="apps/jetty/jettylib/jetty-start.jar" />
+                <pathelement location="apps/jetty/jettylib/jetty-util.jar" />
+                <pathelement location="apps/jetty/jettylib/jetty-webapp.jar" />
+                <pathelement location="apps/jetty/jettylib/jetty-xml.jar" />
+                <pathelement location="apps/systray/java/lib/systray4j.jar" />
+                <pathelement location="apps/jrobin/jrobin-1.5.9.1.jar" />
+                <pathelement location="installer/lib/wrapper/all/wrapper.jar" />
+            </classpath>
+            <!-- These variables are stored in build.properties.
+                  End-users can override by creating the file override.properties -->
+            <link offline="true" href="${javasedocs.url}" packagelistLoc="installer/resources/package-lists/java/" />
+            <link offline="true" href="${javaeedocs.url}" packagelistLoc="installer/resources/package-lists/javaee/" />
+            <link offline="true" href="${jettydocs.url}" packagelistLoc="installer/resources/package-lists/jetty/" />
+            <link offline="true" href="${jrobindocs.url}" packagelistLoc="installer/resources/package-lists/jrobin/" />
+            <link offline="true" href="${wrapperdocs.url}" packagelistLoc="installer/resources/package-lists/wrapper/" />
+        </javadoc>
+        <echo message="Warning, javadoc embeds timestamps in the output, run with 'TZ=UTC ant javadoc' if you plan to distribute" />
+    </target>
+    <target name="javadoc-zip" depends="javadoc">
+        <zip destfile="javadoc.zip" basedir="build" level="9" includes="javadoc\**" />
+    </target>
+
+    <target name="javadoc-test" depends="buildRouter, javadoc" >
+        <mkdir dir="./build" />
+        <mkdir dir="./build/javadoc-test" />
+
+        <!-- set junit home to the old default unless overridden elsewhere -->
+        <property name="junit.home" value="${ant.home}/lib/" />
+        <javadoc access="package"
+            destdir="./build/javadoc-test"
+            packagenames="*"
+            use="true"
+            splitindex="true"
+            doctitle="I2P Unit Test Javadocs for Release ${release.number} Build ${i2p.build.number}${build.extra}"
+            windowtitle="I2P Anonymous Network - Java Documentation - Version ${release.number}">
+            <group title="Core SDK" packages="net.i2p:net.i2p.*:net.i2p.client:net.i2p.client.*:net.i2p.internal:net.i2p.internal.*:freenet.support.CPUInformation:org.bouncycastle.oldcrypto:org.bouncycastle.oldcrypto.*:gnu.crypto.*:gnu.gettext:org:com.nettgryppa.security:net.metanotion:net.metanotion.*" />
+            <group title="Router" packages="net.i2p.router:net.i2p.router.*:net.i2p.data.i2np:org.cybergarage.*:org.freenetproject:org.xlattice.crypto.filters" />
+            <sourcepath>
+                <pathelement location="core/java/test/junit" />
+                <pathelement location="router/java/test/junit" />
+                <pathelement location="core/java/test/scalatest" />
+            </sourcepath>
+            <classpath>
+                <pathelement location="build/i2p.jar" />
+                <pathelement location="build/router.jar" />
+                <pathelement location="${junit.home}/junit4.jar" />
+                <pathelement location="${hamcrest.home}/hamcrest-all.jar" />
+            </classpath>
+            <!--
+                 These variables are stored in build.properties.
+                 End-users can override by creating the file override.properties
+            -->
+            <link offline="true" href="${javasedocs.url}" packagelistLoc="installer/resources/package-lists/java/" />
+            <link offline="true" href="${junitdocs.url}" packagelistLoc="installer/resources/package-lists/junit/" />
+            <link offline="true" href="${i2pdocs.url}" packagelistLoc="build/javadoc/" />
+        </javadoc>
+        <echo message="Warning, javadoc embeds timestamps in the output, run with 'TZ=UTC ant javadoc' if you plan to distribute" />
+    </target>
+
+    <target name="getReleaseNumber">
+        <loadfile srcfile="core/java/src/net/i2p/CoreVersion.java" property="release.number">
+            <filterchain>
+                <linecontains>
+                    <contains value="public final static String VERSION"/>
+                </linecontains>
+                <tokenfilter>
+                    <replaceregex pattern='.*"([^"]+)";' replace="\1" flags="gi" />
+                </tokenfilter>
+                <striplinebreaks/>
+                <trim/>
+            </filterchain>
+        </loadfile>
+        <property name="release.number" value="unknown" />
+        <echo message="Release number is ${release.number}" />
+    </target>
+
+    <target name="getBuildNumber">
+        <loadfile srcfile="router/java/src/net/i2p/router/RouterVersion.java" property="i2p.build.number">
+            <filterchain>
+                <linecontains>
+                    <contains value="public final static long BUILD" />
+                </linecontains>
+                <tokenfilter>
+                    <replaceregex pattern=".*=\s+([0-9]+);" replace="\1" flags="gi" />
+                </tokenfilter>
+                <trim/>
+                <striplinebreaks/>
+            </filterchain>
+        </loadfile>
+        <loadfile srcfile="router/java/src/net/i2p/router/RouterVersion.java" property="build.extra">
+            <filterchain>
+                <linecontains>
+                    <contains value="public final static String EXTRA" />
+                </linecontains>
+                <tokenfilter>
+                    <replaceregex pattern='.*"(.*)";' replace="\1" flags="gi" />
+                </tokenfilter>
+                <trim/>
+                <striplinebreaks/>
+            </filterchain>
+        </loadfile>
+        <property name="i2p.build.number" value="??" />
+        <property name="build.extra" value="" />
+        <echo message="Build number is ${i2p.build.number}${build.extra}" />
+    </target>
+
+    <target name="verifyReleaseBuildNumbers" depends="getReleaseNumber, getBuildNumber" >
+        <echo message="SDK: ${java.vendor} ${java.version} (${java.runtime.name} ${java.runtime.version})" />
+        <fail message="Bad release number: ${release.number}" >
+            <condition>
+                <or>
+                    <equals arg1="${release.number}" arg2="unknown"/>
+                    <equals arg1="${release.number}" arg2=""/>
+                </or>
+            </condition>
+        </fail>
+        <fail message="Non-zero build number: ${i2p.build.number}" >
+            <condition>
+                <not>
+                    <equals arg1="${i2p.build.number}" arg2="0"/>
+                </not>
+            </condition>
+        </fail>
+        <fail message="Non-empty extra build: ${build.extra}" >
+            <condition>
+                <not>
+                    <equals arg1="${build.extra}" arg2=""/>
+                </not>
+            </condition>
+        </fail>
+    </target>
+
+    <target name="-pre-release">
+            <echo message="================================================================" />
+            <echo message="Did you update these files?" />
+            <exec executable="ls" failonerror="true">
+                    <arg value="-l" />
+                    <arg value="history.txt" />
+                    <arg value="installer/install.xml" />
+                    <arg value="core/java/src/net/i2p/CoreVersion.java" />
+                    <arg value="router/java/src/net/i2p/router/RouterVersion.java" />
+            </exec>
+            <echo message="Everything is checked in, right? Let's be sure:" />
+            <exec executable="mtn" failonerror="true">
+                    <arg value="st" />
+            </exec>
+            <echo message="If there are any modified files above, stop now!" />
+            <echo message="================================================================" />
+            <sleep seconds="3"/>
+    </target>
+
+    <target name="clean" depends="pkgclean" >
+        <delete dir="./build" />
+        <delete dir="./reports" />
+        <delete file="installer/lib/izpack/patches.jar" failonerror="false" quiet="true" />
+        <delete file="syndie-standalone.zip" failonerror="false" quiet="true" />
+        <delete file="i2psnark-standalone.zip" failonerror="false" quiet="true" />
+        <delete file="BOB-one.jar" failonerror="false" quiet="true" />
+        <delete file="core/java/cobertura.ser"/>
+        <delete file="javadoc.zip" />
+        <delete file="i2p.fba" />
+        <delete file="${sloccount.report.file}" />
+    </target>
+
+    <target name="distclean" depends="clean">
+        <delete failonerror="false" quiet="true">
+            <fileset dir="." includes="i2pinstall* *.deb i2p_*.bz2 i2pupdate* i2psource* *.sig *.torrent" />
+        </delete>
+        <ant dir="core/java/" target="distclean" />
+        <ant dir="router/java/" target="distclean" />
+        <ant dir="installer/java" target="distclean" />
+        <ant dir="apps/ministreaming/java/" target="distclean" />
+        <ant dir="apps/streaming/java/" target="distclean" />
+        <ant dir="apps/i2ptunnel/java/" target="distclean" />
+        <ant dir="apps/sam/java/" target="distclean" />
+        <ant dir="apps/BOB" target="clean" />
+        <ant dir="apps/desktopgui" target="clean" />
+        <ant dir="apps/routerconsole/java/" target="distclean" />
+        <ant dir="apps/addressbook/" target="distclean" />
+        <ant dir="apps/susimail/" target="distclean" />
+        <ant dir="apps/susidns/src/" target="distclean" />
+        <ant dir="apps/systray/java/" target="distclean" />
+        <ant dir="apps/i2psnark/java/" target="distclean" />
+        <ant dir="apps/jetty/" target="distclean" />
+        <delete dir="core/c/jbigi/bin" />
+        <delete dir="core/c/jbigi/lib" />
+        <delete dir="core/c/jcpuid/lib" />
+        <ant dir="installer/resources/locale" target="distclean" />
+	<!--
+		NOTE! We need to turn off the default excludes for these
+		patterns to work.
+		These are the defaultexcludes in Ant as seen on
+		http://ant.apache.org/manual/CoreTasks/defaultexcludes.html
+		     **/*~
+                     **/#*#
+                     **/.#*
+                     **/%*%
+                     **/._*
+                     **/CVS
+                     **/CVS/**
+                     **/.cvsignore
+                     **/SCCS
+                     **/SCCS/**
+                     **/vssver.scc
+                     **/.svn
+                     **/.svn/**
+                     **/.DS_Store
+		The only recourse is to remove the offending ones.
+		We do this here, as we only need one change, and then put it
+		back after we are done with it.
+	-->
+	<defaultexcludes remove="**/*~"/>
+
+        <delete>
+            <fileset dir="." includes="**/*.class **/*.java~ **/*.txt~ **/*.xml~ **/*.sh~ **/*.SlackBuild~" />
+	    <!--
+	    	Less common, but they pollute my workspace here, so we
+            	might as well nuke these as well. Are there any others?
+            	
+            	!!??? Why don't we just nuke "**/*~" ???!!
+
+            	++Sponge
+            -->
+        </delete>
+	<!--
+		Now we put the defaults back
+	-->
+	<defaultexcludes default="true"/>
+    </target>
+
+    <target name="webappDistclean">
+        <ant dir="apps/i2ptunnel/java/" target="distclean" />
+        <ant dir="apps/routerconsole/java/" target="distclean" />
+        <ant dir="apps/addressbook/" target="distclean" />
+        <ant dir="apps/susimail/" target="distclean" />
+        <ant dir="apps/susidns/src/" target="distclean" />
+        <ant dir="apps/i2psnark/java/" target="distclean" />
+    </target>
+
+    <target name="pkg" depends="distclean, updater, preppkg, installer" />
+
+    <target name="pkg200" depends="distclean, updater200, preppkg, installer" />
+
+    <target name="pkgclean" depends="deletepkg-temp">
+        <delete>
+            <fileset dir="." includes="i2p.tar.bz2 install.jar i2pupdate.zip i2pupdate200.zip" />
+        </delete>
+    </target>
+
+    <target name="preppkg" depends="preppkg-linux, preppkg-freebsd, preppkg-osx, preppkg-windows, jbigi">
+        <copy file="build/jbigi.jar" todir="pkg-temp/lib" />
+        <copy todir="pkg-temp/lib/wrapper/solaris/">
+            <fileset dir="installer/lib/wrapper/solaris/" excludes="*.txt" />
+        </copy>
+    </target>
+
+    <target name="preppkg-nowindows" depends="preppkg-linux, preppkg-freebsd, preppkg-osx, jbigi-nowindows">
+        <copy file="build/jbigi.jar" todir="pkg-temp/lib" />
+        <copy todir="pkg-temp/lib/wrapper/solaris/">
+            <fileset dir="installer/lib/wrapper/solaris/" excludes="*.txt" />
+        </copy>
+        <copy file="installer/lib/wrapper/all/wrapper.jar" todir="pkg-temp/lib" />
+    </target>
+
+    <target name="preppkgRepack" depends="preppkg-linux, preppkg-freebsd, preppkg-osx, preppkg-windows, jbigi">
+        <ant target="repack200" />
+        <!-- no use doing repack200 on jbigi.jar -->
+        <copy file="build/jbigi.jar" todir="pkg-temp/lib" />
+        <copy todir="pkg-temp/lib/wrapper/solaris/">
+            <fileset dir="installer/lib/wrapper/solaris/" excludes="*.txt" />
+        </copy>
+    </target>
+
+    <target name="preppkg-freebsd" depends="preppkg-unix">
+        <copy todir="pkg-temp/lib/wrapper/freebsd/">
+            <fileset dir="installer/lib/wrapper/freebsd/" excludes="*.txt" />
+        </copy>
+        <copy todir="pkg-temp/lib/wrapper/freebsd64/">
+            <fileset dir="installer/lib/wrapper/freebsd64" excludes="*.txt" />
+        </copy>
+    </target>
+
+    <target name="preppkg-freebsd-only" depends="preppkg-freebsd, jbigi-freebsd-only" >
+        <copy file="build/jbigi.jar" todir="pkg-temp/lib" />
+        <copy file="installer/lib/wrapper/all/wrapper.jar" todir="pkg-temp/lib" />
+    </target>
+
+    <!-- only what is needed for debian, etc. -->
+    <target name="preppkg-linux-only" depends="preppkg-linux, jbigi-linux-only" >
+        <copy file="build/jbigi.jar" todir="pkg-temp/lib" />
+        <copy file="installer/lib/wrapper/all/wrapper.jar" todir="pkg-temp/lib" />
+    </target>
+
+    <target name="preppkg-unix" depends="preppkg-base, prep-script-translation" >
+        <copy file="installer/resources/runplain.sh" todir="pkg-temp/" />
+        <copy file="installer/resources/eepget" todir="pkg-temp/" />
+        <copy file="installer/resources/i2prouter" todir="pkg-temp/" />
+        <copy file="installer/resources/osid" todir="pkg-temp/" />
+        <copy file="installer/resources/postinstall.sh" todir="pkg-temp/" />
+        <copy todir="pkg-temp/man/">
+            <fileset dir="installer/resources/man/" />
+        </copy>
+    </target>
+
+    <target name="preppkg-linux" depends="preppkg-linux-x86,preppkg-linux-nonx86" />
+
+    <target name="preppkg-linux-x86" depends="preppkg-unix">
+        <copy todir="pkg-temp/lib/wrapper/linux/">
+            <fileset dir="installer/lib/wrapper/linux/" excludes="*.txt" />
+        </copy>
+        <copy todir="pkg-temp/lib/wrapper/linux64/">
+            <fileset dir="installer/lib/wrapper/linux64/" excludes="*.txt" />
+        </copy>
+    </target>
+
+    <target name="preppkg-linux-nonx86" depends="preppkg-unix">
+        <copy todir="pkg-temp/lib/wrapper/linux-ppc/">
+            <fileset dir="installer/lib/wrapper/linux-ppc/" excludes="*.txt" />
+        </copy>
+        <copy todir="pkg-temp/lib/wrapper/linux-armv5/">
+            <fileset dir="installer/lib/wrapper/linux-armv5/" excludes="*.txt" />
+        </copy>
+        <copy todir="pkg-temp/lib/wrapper/linux-armv6/">
+            <fileset dir="installer/lib/wrapper/linux-armv6/" excludes="*.txt" />
+        </copy>
+    </target>
+
+    <target name="preppkg-osx" depends="preppkg-unix">
+        <!--<copy file="installer/resources/I2P Router Console.webloc" todir="pkg-temp/" />-->
+        <copy todir="pkg-temp/Start I2P Router.app">
+	    <fileset dir="installer/resources/Start I2P Router.app" />
+	</copy>
+        <copy todir="pkg-temp/lib/wrapper/macosx/">
+            <fileset dir="installer/lib/wrapper/macosx/" excludes="*.txt" />
+        </copy>
+        <copy file="installer/resources/net.i2p.router.plist.template" todir="pkg-temp/" />
+        <copy file="installer/resources/install_i2p_service_osx.command" todir="pkg-temp/" />
+        <copy file="installer/resources/uninstall_i2p_service_osx.command" todir="pkg-temp/" />
+    </target>
+
+    <target name="preppkg-osx-only" depends="preppkg-osx, jbigi-osx-only" >
+        <copy file="build/jbigi.jar" todir="pkg-temp/lib" />
+        <copy file="installer/lib/wrapper/all/wrapper.jar" todir="pkg-temp/lib" />
+    </target>
+
+    <target name="preppkg-windows" depends="preppkg-base, buildUtilityJar, buildexe">
+        <copy file="build/i2p.exe" todir="pkg-temp/" failonerror="false" />
+        <copy file="apps/systray/java/lib/systray4j.dll" todir="pkg-temp/lib" />
+        <copy file="apps/systray/java/resources/iggy.ico" todir="pkg-temp/icons" />
+        <copy file="apps/systray/java/resources/iggy.xpm" todir="pkg-temp/icons" />
+        <copy file="installer/resources/eepget.bat" todir="pkg-temp/" />
+        <copy file="installer/resources/i2prouter.bat" todir="pkg-temp/" />
+        <copy file="installer/resources/fixperms.bat" todir="pkg-temp/" />
+        <copy file="installer/resources/install_i2p_service_winnt.bat" todir="pkg-temp/" />
+        <copy file="installer/resources/set_config_dir_for_nt_service.bat" todir="pkg-temp/" />
+        <copy file="installer/resources/uninstall_i2p_service_winnt.bat" todir="pkg-temp/" />
+        <copy file="installer/lib/wrapper/all/wrapper.jar" todir="pkg-temp/lib" />
+        <copy file="build/utility.jar" todir="pkg-temp" />
+        <copy todir="pkg-temp/lib/wrapper/win32/">
+            <fileset dir="installer/lib/wrapper/win32/" excludes="*.txt" />
+        </copy>
+        <copy todir="pkg-temp/lib/wrapper/win64/">
+            <fileset dir="installer/lib/wrapper/win64/" excludes="*.txt" />
+        </copy>
+    </target>
+
+    <target name="preppkg-windows-only" depends="preppkg-windows, jbigi-windows-only">
+        <copy file="build/jbigi.jar" todir="pkg-temp/lib" />
+        <copy file="installer/lib/wrapper/all/wrapper.jar" todir="pkg-temp/lib" />
+    </target>
+
+    <target name="preppkg-base" depends="build, preplicenses, prepConsoleDocs, prepthemeupdates, prepCertificates, prepRouterInfos">
+        <!-- if updater200 was run previously, it left *.pack files in pkg-temp -->
+        <!-- Also remove deletelist.txt used for updater only -->
+        <delete>
+            <fileset dir="pkg-temp" includes="**/*.jar.pack **/*.war.pack deletelist.txt" />
+        </delete>
+        <copy file="build/i2p.jar" todir="pkg-temp/lib/" />
+        <copy file="build/i2ptunnel.jar" todir="pkg-temp/lib/" />
+        <!-- all jetty stuff -->
+        <copy todir="pkg-temp/lib" >
+            <fileset dir="build" includes="commons*.jar jasper*.jar javax*.jar jetty*.jar jsp*.jar org.mortbay.*.jar" />
+        </copy>
+        <copy file="build/mstreaming.jar" todir="pkg-temp/lib/" />
+        <copy file="build/streaming.jar" todir="pkg-temp/lib/" />
+        <copy file="build/router.jar" todir="pkg-temp/lib/" />
+        <copy file="build/desktopgui.jar" todir="pkg-temp/lib/" />
+        <copy file="build/routerconsole.jar" todir="pkg-temp/lib/" />
+        <!-- pulled out of routerconsole.jar in 0.7.12; name without version so we can overwrite if we upgrade  -->
+        <copy file="build/jrobin.jar" tofile="pkg-temp/lib/jrobin.jar" />
+        <copy file="build/sam.jar" todir="pkg-temp/lib/" />
+        <copy file="build/BOB.jar" todir="pkg-temp/lib/" />
+        <copy file="build/systray.jar" todir="pkg-temp/lib" />
+        <copy file="build/i2psnark.jar" todir="pkg-temp/lib/" />
+        <copy file="apps/systray/java/lib/systray4j.jar" todir="pkg-temp/lib" />
+        <copy file="build/i2ptunnel.war" todir="pkg-temp/webapps/" />
+        <copy file="build/routerconsole.war" todir="pkg-temp/webapps/" />
+        <copy file="build/addressbook.war" todir="pkg-temp/webapps/" />
+        <copy file="build/susimail.war" todir="pkg-temp/webapps/" />
+        <copy file="build/susidns.war" todir="pkg-temp/webapps/" />
+        <copy file="apps/susidns/src/WEB-INF/lib/jstl.jar" todir="pkg-temp/lib/" />
+        <copy file="apps/susidns/src/WEB-INF/lib/standard.jar" todir="pkg-temp/lib/" />
+        <copy file="build/i2psnark.war" todir="pkg-temp/webapps/" />
+        <copy file="apps/i2psnark/i2psnark.config" todir="pkg-temp/" />
+        <copy file="installer/resources/blocklist.txt" todir="pkg-temp/" />
+        <copy file="installer/resources/clients.config" todir="pkg-temp/" />
+        <copy file="installer/resources/i2ptunnel.config" todir="pkg-temp/" />
+        <copy file="installer/resources/systray.config" todir="pkg-temp/" />
+        <copy file="installer/resources/wrapper.config" todir="pkg-temp/" />
+        <copy file="installer/resources/hosts.txt" todir="pkg-temp/" />
+        <copy file="INSTALL-headless.txt" todir="pkg-temp/" />
+        <!-- overwrite the truncated history put in by the updater -->
+        <copy file="history.txt" todir="pkg-temp/" overwrite="true" />
+        <mkdir dir="pkg-temp/scripts" />
+        <copy file="apps/proxyscript/i2pProxy.pac" todir="pkg-temp/scripts/" />
+        <copy file="apps/apparmor/home.i2p.i2prouter" todir="pkg-temp/scripts/" />
+        <copy file="installer/resources/startconsole.html" todir="pkg-temp/docs/" />
+        <copy file="installer/resources/start.ico" todir="pkg-temp/docs/" />
+        <copy file="installer/resources/console.ico" todir="pkg-temp/docs/" />
+        <copy file="installer/resources/uninstall.ico" todir="pkg-temp/docs/" />
+        <!-- Eepsite stuff here -->
+        <mkdir dir="pkg-temp/eepsite" />
+        <copy todir="pkg-temp/eepsite/" >
+            <fileset dir="installer/resources/eepsite/" excludes="**/.placeholder" />
+        </copy>
+        <copy todir="pkg-temp/eepsite/docroot/help/lib/" >
+            <fileset dir="installer/resources/icons/flags/" includes="cn.png de.png es.png fr.png ir.png it.png jp.png nl.png ru.png se.png us.png" />
+        </copy>
+        <copy file="installer/resources/themes/console/images/favicon.ico" tofile="pkg-temp/eepsite/docroot/favicon.ico" />
+        <copy todir="pkg-temp/docs/icons/flags" >
+          <fileset dir="installer/resources/icons/flags" />
+        </copy>
+    </target>
+
+    <target name="preplicenses">
+        <copy file="LICENSE.txt" todir="pkg-temp/" />
+        <copy todir="pkg-temp/licenses/" >
+          <fileset dir="licenses/" />
+        </copy>
+        <!--
+              The license in launch4j/ is a BSD license for launch4j
+              The license in launch4j/head is a MIT license for the code that is actually wrapped around the jars
+              So we include the MIT one in our binary package
+         -->
+        <copy file="installer/lib/launch4j/head/LICENSE.txt" tofile="pkg-temp/licenses/LICENSE-Launch4j.txt" />
+        <copy file="apps/jetty/apache-tomcat-deployer/NOTICE" tofile="pkg-temp/licenses/NOTICE-Tomcat.txt" />
+        <!--  Not sure if these are used or should be included -->
+        <copy file="installer/lib/launch4j/lib/foxtrot.LICENSE.txt" tofile="pkg-temp/licenses/LICENSE-Foxtrot.txt" />
+        <copy file="installer/lib/launch4j/lib/JGoodies.Forms.LICENSE.txt" tofile="pkg-temp/licenses/LICENSE-JGoodies-Forms.txt" />
+        <copy file="installer/lib/launch4j/lib/JGoodies.Looks.LICENSE.txt" tofile="pkg-temp/licenses/LICENSE-JGoodies-Looks.txt" />
+        <copy file="installer/lib/launch4j/lib/XStream.LICENSE.txt" tofile="pkg-temp/licenses/LICENSE-XStream.txt" />
+    </target>
+
+    <target name="prepthemeupdates">
+        <copy todir="pkg-temp/docs/themes/" >
+            <fileset dir="installer/resources/themes/" />
+        </copy>
+    </target>
+
+    <!-- SSL Certs -->
+    <target name="prepCertificates">
+        <copy todir="pkg-temp/certificates/" >
+          <fileset dir="installer/resources/certificates/" />
+        </copy>
+    </target>
+
+    <condition property="no.bundle.routerInfos">
+        <isfalse value="${bundle.routerInfos}" />
+    </condition>
+
+    <target name="prepRouterInfos" depends="buildrouter, buildTools" unless="no.bundle.routerInfos">
+        <delete dir="pkg-temp/netDb" />
+        <mkdir dir="pkg-temp/netDb" />
+        <java classname="net.i2p.router.networkdb.kademlia.BundleRouterInfos" fork="true" failonerror="true">
+            <classpath>
+                <pathelement location="build/i2p.jar" />
+                <pathelement location="build/router.jar" />
+                <pathelement location="build/tools.jar" />
+            </classpath>
+            <arg value="-i" />
+            <arg value="${bundle.routerInfos.i2pConfigDir}" />
+            <arg value="-o" />
+            <arg value="pkg-temp/netDb" />
+            <arg value="-c" />
+            <arg value="${bundle.routerInfos.count}" />
+        </java>
+    </target>
+
+    <target name="-areRouterInfosEnabled">
+        <fail message="Option requires &quot;bundle.routerInfos&quot; to be configured. Please read &quot;build.properties&quot; for more info." >
+            <condition>
+                <isfalse value="${bundle.routerInfos}" />
+            </condition>
+        </fail>
+    </target>
+
+    <target name="i2pseeds" depends="-setepoch, -areRouterInfosEnabled, prepRouterInfos">
+        <delete file="i2pseeds.zip" />
+        <delete file="i2pseeds.su3" />
+        <zip destfile="i2pseeds.zip" basedir="pkg-temp/netDb" whenempty="fail" />
+        <su3sign infile="i2pseeds.zip" sigtype="RESEED" outfile="i2pseeds.su3" su3.ver="${epoch}" />
+    </target>
+
+    <!-- this is no longer required, izpack 4.3.0 supports headless installs with java -jar i2pinstall.exe -console -->
+    <!-- and this is no longer used by the SlackBuild -->
+    <target name="tarball" depends="preppkg">
+        <tar compression="bzip2" destfile="i2p.tar.bz2">
+            <tarfileset dir="pkg-temp" includes="**/*" prefix="i2p" />
+        </tar>
+    </target>
+
+    <target name="deletepkg-temp">
+        <delete dir="pkg-temp" />
+    </target>
+
+    <!-- readme and proxy error page files, initialNews.xml files, GeoIP files, and flag icons -->
+    <target name="prepConsoleDocs" depends="prepConsoleDocUpdates, prepgeoupdate" >
+        <copy todir="pkg-temp/docs/initialNews/">
+          <fileset dir="installer/resources/initialNews/" />
+        </copy>
+        <!-- ensure the proxy files have the correct line endings -->
+        <fixcrlf srcdir="pkg-temp/docs" includes="*.ht" encoding="utf8" eol="crlf" />
+    </target>
+
+    <!-- readme and proxy error page files -->
+    <target name="prepConsoleDocUpdates">
+        <copy todir="pkg-temp/docs/" >
+          <fileset dir="installer/resources/readme/" includes="readme*.html" />
+          <fileset dir="installer/resources/proxy/" includes="*.ht" />
+          <!-- lang_ar.png added in 0.8.4; a1,a2,je, and eu.png added in 0.8.9; gg.png added in 0.8.10; im.png added in 0.8.12; cw.png added in 0.9.5 -->
+          <fileset dir="installer/resources/" includes="icons/flags/lang_ar.png icons/flags/gg.png icons/flags/je.png icons/flags/eu.png icons/flags/im.png icons/flags/a1.png icons/flags/a2.png icons/flags/cw.png" />
+        </copy>
+    </target>
+
+    <target name="consoleDocs" depends="deletepkg-temp, prepConsoleDocs">
+        <zip destfile="docs.zip" basedir="pkg-temp" whenempty="fail" />
+    </target>
+
+    <target name="copyJavadoc" depends="javadoc">
+        <copy todir="pkg-temp/docs/javadoc" >
+          <fileset dir="build/javadoc/" />
+        </copy>
+    </target>
+
+    <target name="updater200" depends="prepupdate, preplicenses, pack200, zipit200" />
+    <target name="updater200WithJetty" depends="prepjupdate, preplicenses, pack200, zipit200" />
+    <target name="updater200WithJettyAndGeoIP" depends="prepjupdate, prepgeoupdate, preplicenses, pack200, zipit200" />
+    <target name="updater200WithJettyFixes" depends="prepjupdatefixes, preplicenses, pack200, zipit200" />
+    <target name="updater200WithJettyFixesAndJbigi" depends="prepjupdatefixes, prepjbigiupdate, preplicenses, pack200, zipit200" />
+    <target name="updater" depends="prepupdate, preplicenses, zipit" />
+    <target name="updaterRepack" depends="prepupdate, preplicenses, repack200, zipit" />
+    <target name="updaterWithJavadoc" depends="prepupdate, preplicenses, copyJavadoc, zipit" />
+    <target name="updater200WithJavadoc" depends="prepupdate, preplicenses, copyJavadoc, pack200, zipit200" />
+    <target name="updaterWithJavadocAndJetty" depends="prepjupdate, preplicenses, copyJavadoc, zipit" />
+    <target name="updater200WithJavadocAndJetty" depends="prepjupdate, preplicenses, copyJavadoc, pack200, zipit200" />
+    <target name="updaterWithGeoIP" depends="prepupdate, prepgeoupdate, preplicenses, zipit" />
+    <target name="updaterWithJetty" depends="prepjupdate, preplicenses, zipit" />
+    <target name="updaterWithJettyRepack" depends="prepjupdate, preplicenses, repack200, zipit" />
+    <target name="updaterWithJettyAndGeoIPRepack" depends="prepjupdate, prepgeoupdate, preplicenses, repack200, zipit" />
+    <target name="updaterWithJettyFixes" depends="prepjupdatefixes, preplicenses, zipit" />
+    <target name="updaterWithJettyFixesAndJbigi" depends="prepjupdatefixes, prepjbigiupdate, preplicenses, zipit" />
+    <target name="updaterWithJettyFixesAndGeoIP" depends="prepjupdatefixes, prepgeoupdate, preplicenses, zipit" />
+    <target name="updaterSmall" depends="prepupdateSmall, zipit" />
+    <target name="updaterRouter" depends="prepupdateRouter, zipit" />
+
+    <target name="-sign-update" depends="buildrouter">
+        <su3sign infile="i2pupdate200.zip" sigtype="ROUTER" outfile="i2pupdate.su3" su3.ver="${full.version}" />
+    </target>
+
+    <target name="signed-updater200" depends="updater200, -sign-update" />
+    <target name="signed-updater200WithJetty" depends="updater200WithJetty, -sign-update" />
+    <target name="signed-updater200WithJettyAndGeoIP" depends="updater200WithJettyAndGeoIP, -sign-update" />
+    <target name="signed-updater200WithJavadoc" depends="updater200WithJavadoc, -sign-update" />
+    <target name="signed-updater200WithJavadocAndJetty" depends="updater200WithJavadocAndJetty, -sign-update" />
+
+    <target name="zipit" depends="getReleaseNumber">
+        <!--
+             As of release 0.8.8, the router will enforce a zipfile comment equal to the
+             version number in the sud/su2 header, since the version in the header is NOT
+             covered by the signature.
+         -->
+        <zip destfile="i2pupdate.zip" basedir="pkg-temp" whenempty="fail" comment="${release.number}" />
+       <!-- just a test, makes almost no difference
+        <tar destfile="i2pupdate.tgz" basedir="pkg-temp" compression="gzip" />
+        <tar destfile="i2pupdate.tbz" basedir="pkg-temp" compression="bzip2" />
+       -->
+    </target>
+
+    <target name="zipit200" depends="getReleaseNumber" >
+        <zip destfile="i2pupdate200.zip" basedir="pkg-temp" whenempty="fail" comment="${release.number}" />
+    </target>
+
+    <target name="pack200">
+        <!-- pack200 will only pack to a .pack file, and only from a .jar file, so we put another .jar on the end -->
+        <!-- can't pack an empty jar or one without classes, it will fail to unpack on Java 5;
+          -  see http://bugs.sun.com/view_bug.do?bug_id=6712743
+          -->
+        <!-- *nix here -->
+        <exec executable="sh" osfamily="unix" failonerror="true">
+            <arg value="-c" />
+            <arg value="for i in pkg-temp/lib/*.jar pkg-temp/webapps/*war; do if [ $i = pkg-temp/lib/jasper-compiler.jar -o $i = pkg-temp/lib/jbigi.jar -o $i = pkg-temp/lib/jetty-java5-threadpool.jar -o $i = pkg-temp/lib/jetty-sslengine.jar ]; then continue; fi; echo pack200 $i; mv $i $i.jar; pack200 -g $i.pack $i.jar; rm -f $i.jar; done" />
+        </exec>
+        <exec executable="sh" osfamily="mac" failonerror="true">
+            <arg value="-c" />
+            <arg value="for i in pkg-temp/lib/*.jar pkg-temp/webapps/*war; do if [ $i = pkg-temp/lib/jasper-compiler.jar -o $i = pkg-temp/lib/jbigi.jar -o $i = pkg-temp/lib/jetty-java5-threadpool.jar -o $i = pkg-temp/lib/jetty-sslengine.jar ]; then continue; fi; echo pack200 $i; mv $i $i.jar; pack200 -g $i.pack $i.jar; rm -f $i.jar; done" />
+        </exec>
+        <!-- windoz here : i admit, i hate escaped symbols in xml, indeed = =! -->
+        <exec executable="cmd" osfamily="windows" failonerror="true">
+            <arg value="/c" />
+            <!-- TODO implement fix above -->
+            <arg value="for %i in (pkg-temp\webapps\*.war) do move %i %i.jar &amp;&amp; pack200 -g pkg-temp\webapps\%~ni.war.pack %i.jar &amp;&amp; del %i.jar" />
+        </exec>
+        <exec executable="cmd" osfamily="windows" failonerror="true">
+                <arg value="/c" />
+                <arg value="for %i in (pkg-temp\lib\*.jar) do pack200 -g %i.pack %i &amp;&amp; del %i" />
+        </exec>
+    </target>
+
+    <!-- saves about 1% on average (more on jars with multiple compiled po files since they have lots of common strings) -->
+    <target name="repack200">
+        <!-- pack200 will only repack a .jar file, so we put another .jar on the end -->
+        <!-- *nix here -->
+        <exec executable="sh" osfamily="unix" failonerror="true">
+            <arg value="-c" />
+            <arg value="for i in pkg-temp/lib/*.jar pkg-temp/webapps/*war; do echo pack200 -r $i; mv $i $i.jar; pack200 -r $i.jar; mv $i.jar $i; done" />
+        </exec>
+        <exec executable="sh" osfamily="mac" failonerror="true">
+            <arg value="-c" />
+            <arg value="for i in pkg-temp/lib/*.jar pkg-temp/webapps/*war; do echo pack200 -r $i; mv $i $i.jar; pack200 -r $i.jar; mv $i.jar $i; done" />
+        </exec>
+        <!-- windoz here : i admit, i hate escaped symbols in xml, indeed = =! -->
+        <exec executable="cmd" osfamily="windows" failonerror="true">
+            <arg value="/c" />
+            <arg value="for %i in (pkg-temp\webapps\*.war) do move %i %i.jar &amp;&amp; pack200 -r %i.jar &amp;&amp; move %i.jar %i" />
+        </exec>
+        <exec executable="cmd" osfamily="windows" failonerror="true">
+                <arg value="/c" />
+                <arg value="for %i in (pkg-temp\lib\*.jar) do pack200 -r %i" />
+        </exec>
+    </target>
+
+    <target name="prepupdate" depends="build2, prepupdateSmall, prepConsoleDocUpdates, prepCertificates, prep-script-translation">
+        <copy file="build/BOB.jar" todir="pkg-temp/lib/" />
+        <copy file="build/sam.jar" todir="pkg-temp/lib/" />
+        <copy file="build/i2psnark.jar" todir="pkg-temp/lib" />
+        <!-- include systray changes in 0.7.5 -->
+        <copy file="build/systray.jar" todir="pkg-temp/lib/" />
+       <!-- removed from updater in 0.9
+        <copy file="build/desktopgui.jar" todir="pkg-temp/lib/" />
+       -->
+        <copy file="build/susimail.war" todir="pkg-temp/webapps/" />
+        <copy file="build/susidns.war" todir="pkg-temp/webapps/" />
+        <!-- as of 0.7.12; someday, we can remove these from the updater -->
+        <copy file="apps/susidns/src/WEB-INF/lib/jstl.jar" todir="pkg-temp/lib/" />
+        <copy file="apps/susidns/src/WEB-INF/lib/standard.jar" todir="pkg-temp/lib/" />
+        <copy file="build/i2psnark.war" todir="pkg-temp/webapps/" />
+        <copy file="history.txt" todir="pkg-temp/" />
+        <!-- the following overwrites history.txt on unix to shrink the update file -->
+        <copy file="history.txt" tofile="pkg-temp/history.txt" overwrite="true">
+            <filterchain>
+                <headfilter lines="1500" />
+            </filterchain>
+        </copy>
+        <concat append="true" destfile="pkg-temp/history.txt">&#10;&#10;----------------&#10;&#10;EARLIER HISTORY IS AVAILABLE IN THE SOURCE PACKAGE"</concat>
+        <copy file="installer/resources/deletelist.txt" todir="pkg-temp/" />
+        <copy file="installer/resources/blocklist.txt" todir="pkg-temp/" />
+    </target>
+
+    <target name="prepupdateSmall" depends="buildSmall, prepupdateRouter, prepjupdatefixes, prepthemeupdates">
+        <copy file="build/i2ptunnel.jar" todir="pkg-temp/lib/" />
+        <copy file="build/mstreaming.jar" todir="pkg-temp/lib/" />
+        <copy file="build/streaming.jar" todir="pkg-temp/lib/" />
+        <copy file="build/routerconsole.jar" todir="pkg-temp/lib/" />
+        <!-- pulled out of routerconsole.jar in 0.7.12, someday we can take out of updater -->
+        <!-- name without version so we can overwrite if we upgrade  -->
+        <copy file="build/jrobin.jar" tofile="pkg-temp/lib/jrobin.jar" />
+        <copy file="build/i2ptunnel.war" todir="pkg-temp/webapps/" />
+        <copy file="build/routerconsole.war" todir="pkg-temp/webapps/" />
+        <copy file="build/addressbook.war" todir="pkg-temp/webapps/" />
+        <!-- decapitalized the file in 0.7.8 -->
+        <copy file="installer/resources/countries.txt" todir="pkg-temp/geoip/" />
+        <!-- small enough to include for now -->
+        <copy file="installer/resources/geoipv6.dat.gz" todir="pkg-temp/geoip/" />
+        <copy file="installer/resources/continents.txt" todir="pkg-temp/geoip/" />
+      <!--
+        <copy file="installer/resources/public-suffix-list.txt" todir="pkg-temp/geoip/" />
+       -->
+    </target>
+
+    <target name="prepupdateRouter" depends="buildrouter, deletepkg-temp">
+        <copy file="build/i2p.jar" todir="pkg-temp/lib/" />
+        <copy file="build/router.jar" todir="pkg-temp/lib/" />
+    </target>
+
+    <!-- jbigi.jar -->
+    <target name="prepjbigiupdate" depends="jbigi">
+        <copy file="build/jbigi.jar" todir="pkg-temp/lib/" />
+    </target>
+
+    <!-- GeoIP files and flag icons -->
+    <target name="prepgeoupdate">
+        <copy file="installer/resources/geoip.txt" todir="pkg-temp/geoip/" />
+        <copy file="installer/resources/geoipv6.dat.gz" todir="pkg-temp/geoip/" />
+        <copy file="installer/resources/countries.txt" todir="pkg-temp/geoip/" />
+        <copy file="installer/resources/continents.txt" todir="pkg-temp/geoip/" />
+      <!--
+        <copy file="installer/resources/public-suffix-list.txt" todir="pkg-temp/geoip/" />
+       -->
+    </target>
+
+    <!-- All jetty jars required for update.
+         We don't need commons-el or commons-logging, they haven't changed.
+         TODO do we need to bother updating jasper?
+         TODO where is JMX? We don't need it I hope.
+      -->
+    <target name="prepjupdate" depends="prepupdate, buildWEB">
+        <copy todir="pkg-temp/lib" >
+            <fileset dir="build" includes="commons*.jar jasper*.jar javax*.jar jetty*.jar jsp*.jar org.mortbay.*.jar" />
+        </copy>
+        <!--  We have to package the new eepsite files for MigrateJetty.java, but we
+              can't overwrite an existing eepsite dir in a non-split configuration.
+          -->
+        <copy todir="pkg-temp/eepsite-jetty7" >
+            <fileset dir="installer/resources/eepsite" includes="*.xml contexts/* etc/*" />
+        </copy>
+    </target>
+
+    <target name="delete-j6-update">
+        <delete dir="pkg-temp/eepsite-jetty7" />
+    </target>
+
+    <!-- Jetty 6 I2P logging addons, not really fixes -->
+    <target name="prepjupdatefixes" depends="buildWEB">
+        <copy file="build/jetty-i2p.jar" todir="pkg-temp/lib/" />
+    </target>
+
+    <target name="util-list-changes" depends="checkForMtn" if="mtn.available" >
+        <exec executable="mtn" outputproperty="workspace.changes.util" errorproperty="mtn.error.util" failifexecutionfails="false" >
+            <arg value="list" />
+            <arg value="changed" />
+            <arg value="core/java/src/net/i2p/util" />
+        </exec>
+        <!-- \n in an attribute value generates an invalid manifest -->
+        <exec executable="tr" inputstring="${workspace.changes.util}" outputproperty="workspace.changes.util.tr" errorproperty="mtn.error2" failifexecutionfails="false" >
+            <arg value="-s" />
+            <arg value="[:space:]" />
+            <arg value="," />
+        </exec>
+    </target>
+
+    <target name="izpack-patches" >
+            <taskdef name="izpack"
+                     classpath="${basedir}/installer/lib/izpack/patches.jar:${basedir}/installer/lib/izpack/standalone-compiler.jar"
+                     classname="com.izforge.izpack.ant.IzPackTask" />
+        <jar destfile="${basedir}/installer/lib/izpack/patches.jar"
+             basedir="${basedir}/installer/lib/izpack/patches" />
+    </target>
+
+    <target name="buildUtilityJar" depends="buildCore">
+        <ant dir="installer/java" target="build" />
+    </target>
+
+    <target name="installer" depends="preppkg, buildProperties, util-list-changes, izpack-patches, buildUtilityJar" >
+        <!--
+          Force 1.5 pack200 output
+          Doesnt work!
+          http://jira.codehaus.org/browse/IZPACK-404
+          http://forums.sun.com/thread.jspa?threadID=773439
+          http://bfo.co.uk/blog/2010/05/13/combining_ant_jar_signatures_and_pack200.html
+        <property name="com.sun.java.util.jar.pack.package.majver" value="150" />
+        <property name="com.sun.java.util.jar.pack.package.minver" value="7" />
+        -->
+        <izpack input="${basedir}/installer/install.xml" output="${basedir}/install.jar" installerType="standard" basedir="${basedir}" />
+
+        <ant target="installerexe" />
+    </target>
+
+    <!-- this makes i2pinstall.exe from install.jar -->
+    <target name="installerexe" depends="launch4j" unless="noExe">
+        <echo message="See the file &quot;build.properties&quot; if this step fails." />
+        <!-- now the installer exe -->
+        <launch4j configFile="./installer/i2pinstaller.xml" />
+        <!-- thazzit -->
+    </target>
+
+    <!-- Custom installers -->
+    <target name="installer-nowindows" depends="clean, preppkg-nowindows, izpack-patches" >
+        <fixcrlf srcdir="pkg-temp" includes="*.config **/*.xml **/*.properties **/*.txt scripts/*" encoding="utf8" eol="lf" />
+        <izpack input="${basedir}/installer/install.xml" output="${basedir}/i2pinstall_${full.version}.jar" installerType="standard" basedir="${basedir}" />
+    </target>
+
+
+    <target name="installer-freebsd" depends="clean, preppkg-freebsd-only, izpack-patches" >
+        <fixcrlf srcdir="pkg-temp" includes="*.config **/*.xml **/*.properties **/*.txt scripts/*" encoding="utf8" eol="lf" />
+        <izpack input="${basedir}/installer/install.xml" output="${basedir}/i2pinstall_${full.version}_freebsd-only.jar" installerType="standard" basedir="${basedir}" />
+    </target>
+
+    <target name="installer-linux" depends="clean, preppkg-linux-only, izpack-patches" >
+        <fixcrlf srcdir="pkg-temp" includes="*.config **/*.xml **/*.properties **/*.txt scripts/*" encoding="utf8" eol="lf" />
+        <izpack input="${basedir}/installer/install.xml" output="${basedir}/i2pinstall_${full.version}_linux-only.jar" installerType="standard" basedir="${basedir}" />
+    </target>
+
+
+    <target name="installer-osx" depends="clean, checkForIzpack2App, preppkg-osx-only, izpack-patches">
+        <fixcrlf srcdir="pkg-temp" includes="*.config **/*.xml **/*.properties **/*.txt scripts/*" encoding="utf8" eol="lf" />
+        <mkdir dir="pkg-temp/osx" />
+        <izpack input="${basedir}/installer/install.xml" output="${basedir}/i2pinstall_${full.version}_osx-only.jar" installerType="standard" basedir="${basedir}" />
+        <ant target="installer2app" />
+        <delete dir="pkg-temp/osx" />
+    </target>
+
+    <target name="checkForIzpack2App">
+        <!-- we'll set the izpack2app binary name if it's not been set elsewhere yet -->
+        <property name="izpack2app.binary" value="${user.home}/IzPack/utils/wrappers/izpack2app/izpack2app.py" />
+        <available property="izpack2app.available" file="${izpack2app.binary}" />
+    </target>
+
+    <target name="installer2app" if="izpack2app.available">
+        <mkdir dir="pkg-temp/osx" />
+        <exec executable="python" failonerror="true">
+            <arg value="${izpack2app.binary}" />
+            <arg value="${basedir}/i2pinstall_${full.version}_osx-only.jar" />
+            <arg value="${basedir}/pkg-temp/osx/i2p-${full.version}_osx-install.app" />
+        </exec>
+
+        <tar longfile="gnu" destfile="${basedir}/i2pinstall_${full.version}_osx.tar.bz2" compression="bzip2">
+            <tarfileset dir="${basedir}/pkg-temp/osx/i2p-${full.version}_osx-install.app" prefix="/i2p-${full.version}_osx-install.app" filemode="644">
+                <include name="**/**" />
+                <exclude name="Contents/MacOS/*" />
+            </tarfileset>
+            <tarfileset dir="${basedir}/pkg-temp/osx/i2p-${full.version}_osx-install.app" prefix="/i2p-${full.version}_osx-install.app" filemode="755">
+                <include name="Contents/MacOS/*" />
+            </tarfileset>
+        </tar>
+    </target>
+
+    <!-- call between installer-xxx and installer-windows -->
+    <target name="delete-nonwindows">
+        <delete dir="pkg-temp/lib/wrapper/" />
+        <delete dir="pkg-temp/locale/" />
+        <delete dir="pkg-temp/man/" />
+        <delete dir="pkg-temp/Start I2P Router.app/" />
+        <delete dir="pkg-temp" includes="eepget i2prouter INSTALL-headless.txt osid postinstall.sh runplain.sh" />
+    </target>
+
+    <target name="installer-windows" depends="clean, preppkg-windows-only, util-list-changes, izpack-patches, buildUtilityJar" >
+        <fixcrlf srcdir="pkg-temp" includes="*.config *.bat *.cmd **/*.xml **/*.properties **/*.txt scripts/*" encoding="utf8" eol="crlf"/>
+        <izpack input="${basedir}/installer/install.xml" output="${basedir}/install.jar" installerType="standard" basedir="${basedir}" />
+        <ant target="installerexe" />
+        <delete file="${basedir}/install.jar" />
+        <move file="${basedir}/i2pinstall.exe" tofile="${basedir}/i2pinstall_${full.version}_windows.exe" />
+    </target>
+
+    <!-- this is broken as installer-xxx targets may delete (or not delete) things in pkg-temp -->
+    <target name="installer-all" depends="installer-freebsd, installer-linux, installer-osx, installer-windows, installer-nowindows, installer" >
+    </target>
+    <!-- end custom installers -->
+
+    <!-- unit tests -->
+    <target name="buildTest">
+        <ant dir="core/java/" target="jarTest" />
+        <ant dir="router/java/" target="jarTest" />
+        <copy file="core/java/build/i2ptest.jar" todir="build" />
+        <copy file="router/java/build/routertest.jar" todir="build" />
+    </target>
+    <target name="prepTest" depends="prepupdate, buildTest">
+        <!-- overwrite i2p.jar and router.jar with the test versions -->
+        <copy file="build/i2ptest.jar" tofile="pkg-temp/lib/i2p.jar" overwrite="true" />
+        <copy file="build/routertest.jar" tofile="pkg-temp/lib/router.jar" overwrite="true" />
+    </target>
+    <target name="updateTest" depends="prepTest, zipit" />
+    <target name="junit.test" depends="buildProperties, jbigi" >
+        <ant dir="core/java/" target="junit.test" />
+        <ant dir="router/java/" target="junit.test" />
+        <ant dir="apps/streaming/java/" target="junit.test" />
+    </target>
+    <target name="scalatest.test" depends="buildProperties, jbigi" >
+        <ant dir="core/java/" target="scalatest.test" />
+        <!-- note there are no router scala tests yet -->
+        <ant dir="router/java/" target="scalatest.test" />
+    </target>
+    <target name="test" depends="buildProperties, jbigi" >
+        <!-- both junit and scala -->
+        <ant dir="core/java/" target="test" />
+        <ant dir="router/java/" target="test" />
+        <ant dir="apps/streaming/java/" target="test" />
+    </target>
+    <target name="scalatest.report" depends="buildProperties" >
+        <ant dir="core/java/" target="scalatest.report" />
+        <ant dir="router/java/" target="scalatest.report" />
+    </target>
+    <target name="junit.report" depends="buildProperties" >
+        <ant dir="core/java/" target="junit.report" />
+        <ant dir="router/java/" target="junit.report" />
+        <ant dir="apps/streaming/java/" target="junit.report" />
+    </target>
+    <target name="clover.report" depends="buildProperties" if="with.clover">
+        <ant dir="core/java/" target="clover.report" />
+        <ant dir="router/java/" target="clover.report" />
+        <ant dir="apps/streaming/java" target="clover.report" />
+    </target>
+    <target name="cobertura.report" depends="buildProperties" if="with.cobertura">
+        <ant dir="core/java/" target="cobertura.report" />
+        <ant dir="router/java/" target="cobertura.report" />
+        <ant dir="apps/streaming/java" target="cobertura.report" />
+    </target>
+    <target name="test.report" depends="junit.report, scalatest.report, clover.report, cobertura.report"/>
+    <target name="fulltest" depends="buildProperties, jbigi" >
+        <ant dir="core/java/" target="fulltest" />
+        <ant dir="router/java/" target="fulltest" />
+        <ant dir="apps/streaming/java" target="fulltest" />
+    </target>
+    <target name="jenkins.cobertura.report" depends="cobertura.report">
+        <!--
+             The jenkins cobertura plugin couldn't find the source files.
+         -->
+        <replaceregexp byline="true" file="reports/core/cobertura/coverage.xml"
+            match='filename="net' replace='filename="core/java/src/net'/>
+        <replaceregexp byline="true" file="reports/core/cobertura/coverage.xml"
+            match="&lt;source&gt;./src" replace='&lt;source&gt;./core/java/src'/>
+
+        <replaceregexp byline="true" file="reports/router/cobertura/coverage.xml"
+            match='filename="net' replace='filename="router/java/src/net'/>
+        <replaceregexp byline="true" file="reports/router/cobertura/coverage.xml"
+            match="&lt;source&gt;./src" replace="&lt;source&gt;router/java/src"/>
+
+        <replaceregexp byline="true" file="reports/streaming/cobertura/coverage.xml"
+            match='filename="net' replace='filename="apps/streaming/java/src/net'/>
+        <replaceregexp byline="true" file="reports/streaming/cobertura/coverage.xml"
+            match="&lt;source&gt;./src" replace="&lt;source&gt;apps/streaming/java/src"/>
+    </target>
+    <!-- end unit tests -->
+
+    <target name="testscripts" >
+        <exec executable="tests/scripts/checkcerts.sh" failonerror="true" />
+        <exec executable="tests/scripts/checkpo.sh" failonerror="true" />
+        <exec executable="tests/scripts/checkutf8.sh" failonerror="true" />
+        <exec executable="tests/scripts/checkxml.sh" failonerror="true" />
+        <exec executable="tests/scripts/checkscripts.sh" failonerror="true" />
+    </target>
+
+
+    <target name="testscripts-net" >
+        <exec executable="tests/scripts/checkremotecerts.sh" failonerror="true" />
+    </target>
+
+    <target name="testscripts-all" depends="testscripts,testscripts-net" />
+
+    <!-- <target name="syndie" >
+        <ant dir="apps/syndie/java/" target="standalone" />
+        <copy file="apps/syndie/java/syndie-standalone.zip" todir="." />
+    </target> -->
+    <target name="i2psnark" depends="buildProperties" >
+        <ant dir="apps/i2psnark/java" target="standalone" />
+        <copy file="apps/i2psnark/java/i2psnark-standalone.zip" todir="." />
+    </target>
+    <target name="slackpkg">
+        <ant dir="Slackware/i2p/" target="slackpkg" />
+    </target>
+    <target name="justBOB" depends="builddepSmall, jbigi">
+        <ant dir="apps/BOB/" target="onejar" />
+        <copy file="apps/BOB/dist/BOB-one.jar" todir="." />
+    </target>
+
+    <target name="sloccount.report">
+        <property name="sloccount.report.file" value="sloccount.sc" />
+        <echo message="Generating sloccount report (this will take awhile)" />
+        <exec executable="sloccount" failonerror="true">
+            <arg value="--details"/>
+            <arg value="--wide"/>
+            <arg value="${basedir}"/>
+            <redirector output="${sloccount.report.file}">
+                <outputfilterchain>
+                    <linecontainsregexp negate="true">
+                        <regexp pattern="(Warning: |lib/launch4j|_MTN|reports|pkg-temp|licenses|i2p\.fba|gmp-|WEB-INF)" />
+                    </linecontainsregexp>
+                    <linecontains negate="true">
+                        <contains value="${sloccount.report.file}" />
+                    </linecontains>
+                </outputfilterchain>
+            </redirector>
+        </exec>
+        <echo message="sloccount report saved to the file &quot;${sloccount.report.file}&quot;" />
+    </target>
+
+    <target name="findbugs" depends="build2, buildUtilityJar">
+        <echo message="Starting findbugs, this will take a while..." />
+        <exec executable="nice" failonerror="true">
+            <arg value="findbugs"/>
+            <arg value="-textui"/>
+            <arg value="-projectName"/>
+            <arg value="i2p"/>
+            <arg value="-sortByClass"/>
+            <arg value="-xml"/>
+            <arg value="-output"/>
+            <arg value="i2p.fba"/>
+            <arg value="-auxclasspath"/>
+            <arg value="build/commons-el.jar:build/commons-logging.jar:build/jasper-runtime.jar:build/javax.servlet.jar:build/org.mortbay.jetty.jar:apps/jrobin/jrobin-1.5.9.1.jar:apps/systray/java/lib/systray4j.jar:installer/lib/wrapper/all/wrapper.jar:apps/susidns/src/WEB-INF/lib/standard.jar:apps/susidns/src/WEB-INF/lib/jstl.jar:apps/jrobin/jrobin-1.5.9.1.jar"/>
+            <arg value="-sourcepath"/>
+            <arg value="apps/BOB/src/:apps/addressbook/java/src/:apps/i2psnark/java/src/:apps/i2ptunnel/java/src/:apps/ministreaming/java/src/:apps/routerconsole/java/src/:apps/sam/java/src/:apps/streaming/java/src/:apps/susidns/src/java/src/:apps/susimail/src/src/:apps/systray/java/src/:core/java/src/:router/java/src/:installer/java/src"/>
+            <!-- start of the files to be analyzed -->
+            <arg value="build/BOB.jar"/>
+            <arg value="build/addressbook.war"/>
+            <arg value="build/i2p.jar"/>
+            <arg value="build/i2psnark.jar"/>
+            <arg value="build/i2psnark.war"/>
+            <arg value="build/i2ptunnel.jar"/>
+            <arg value="build/i2ptunnel.war"/>
+            <arg value="build/jetty-i2p.jar"/>
+            <arg value="build/mstreaming.jar"/>
+            <arg value="build/router.jar/"/>
+            <arg value="build/desktopgui.jar"/>
+            <arg value="build/routerconsole.jar"/>
+            <arg value="build/routerconsole.war"/>
+            <arg value="build/sam.jar"/>
+            <arg value="build/streaming.jar"/>
+            <arg value="build/susidns.war"/>
+            <arg value="build/susimail.war"/>
+            <arg value="build/systray.jar"/>
+            <arg value="build/utility.jar"/>
+        </exec>
+        <echo message="Findbugs output stored in i2p.fba" />
+        <echo message="Now run: findbugs i2p.fba" />
+    </target>
+
+    <!-- this is the same dependency as pkg, but with updater200 in the middle,
+         since preppkg puts too much stuff in pkg-temp -->
+<!--
+    <target name="release" depends="distclean, updaterWithJettyFixesAndJbigi , updater200WithJettyFixes, preppkg, installer, getReleaseNumber" >
+    <target name="release" depends="verifyReleaseBuildNumbers, -pre-release, distclean, testscripts, updaterWithJettyAndGeoIPRepack, updater200WithJettyAndGeoIP, delete-j6-update, installer-nowindows, delete-nonwindows, installer-windows">
+-->
+    <target name="release" depends="verifyReleaseBuildNumbers, -pre-release, distclean, testscripts, updaterWithJettyRepack, updater200WithJetty, delete-j6-update, installer-nowindows, delete-nonwindows, installer-windows">
+        <echo message="New version number is ${release.number}" />
+        <copy file="i2pupdate.zip" tofile="i2pupdate_${release.number}.zip" />
+        <copy file="i2pinstall_${full.version}.jar" tofile="i2pinstall_${release.number}.jar" />
+        <copy file="i2pinstall_${full.version}_windows.exe" tofile="i2pinstall_${release.number}_windows.exe" />
+        <delete file="i2pupdate.sud" />
+        <delete file="i2pupdate.su2" />
+        <!-- make this a lot easier by putting release.privkey=/path/to/privkey in override.properties -->
+
+        <!-- now build and verify the packed sud from the packed zip -->
+        <sudsign infile="i2pupdate.zip" outfile="i2pupdate.sud" />
+
+        <!-- now build and verify the packed su2 from the packed zip -->
+        <sudsign infile="i2pupdate200.zip" outfile="i2pupdate.su2" />
+        <!-- now build and verify the packed su3 from the packed zip -->
+        <su3sign infile="i2pupdate200.zip" sigtype="ROUTER" outfile="i2pupdate.su3" su3.ver="${release.number}" />
+        <!-- this will use the monotonerc file in the current workspace -->
+        <echo message="Checking out fresh copy into ../i2p-${release.number} for tarballing:" />
+        <delete dir="../i2p-${release.number}" />
+        <exec executable="mtn" failonerror="true">
+            <arg value="co" />
+            <!-- w: is the revision of the current workspace -->
+            <arg value="-r" />
+            <arg value="w:" />
+            <arg value="../i2p-${release.number}/" />
+        </exec>
+        <exec executable="tar" failonerror="true">
+            <arg value="cjf" />
+            <arg value="i2psource_${release.number}.tar.bz2" />
+            <arg value="-C" />
+            <arg value=".." />
+            <arg value="--exclude" />
+            <arg value="i2p-${release.number}/_MTN*" />
+            <arg value="i2p-${release.number}/" />
+        </exec>
+        <echo message="Sign the files:" />
+        <input message="Enter GPG key ID (e.g. 0x12345678) for signing:" addproperty="release.gpg.keyid" />
+        <fail message="You must enter a key ID." >
+            <condition>
+                <equals arg1="${release.gpg.keyid}" arg2=""/>
+            </condition>
+        </fail>
+
+        <!-- the gpgsign macro sets the permission of signed files and the sigs themselves to 444 -->
+        <gpgsign file="i2pinstall_${release.number}_windows.exe" />
+        <gpgsign file="i2pinstall_${release.number}.jar" />
+        <gpgsign file="i2psource_${release.number}.tar.bz2" />
+        <gpgsign file="i2pupdate_${release.number}.zip" />
+
+        <chmod perm="444" type="file">
+            <fileset dir="${basedir}">
+                <include name="i2pupdate.su2" />
+                <include name="i2pupdate.su3" />
+                <include name="i2pupdate.sud" />
+            </fileset>
+        </chmod>
+        <echo message="File sizes:" />
+        <exec executable="ls" failonerror="true">
+            <arg value="-l" />
+            <arg value="i2pinstall_${release.number}_windows.exe" />
+            <arg value="i2pinstall_${release.number}.jar" />
+            <arg value="i2psource_${release.number}.tar.bz2" />
+            <arg value="i2pupdate_${release.number}.zip" />
+            <arg value="i2pupdate.su2" />
+            <arg value="i2pupdate.su3" />
+            <arg value="i2pupdate.sud" />
+            <arg value="i2pinstall_${release.number}_windows.exe.sig" />
+            <arg value="i2pinstall_${release.number}.jar.sig" />
+            <arg value="i2psource_${release.number}.tar.bz2.sig" />
+            <arg value="i2pupdate_${release.number}.zip.sig" />
+        </exec>
+        <echo message="SHA256 sums:" />
+        <sha256sum file="i2pinstall_${release.number}_windows.exe" />
+        <sha256sum file="i2pinstall_${release.number}.jar" />
+        <sha256sum file="i2psource_${release.number}.tar.bz2" />
+        <sha256sum file="i2pupdate_${release.number}.zip" />
+        <sha256sum file="i2pupdate.su2" />
+        <sha256sum file="i2pupdate.su3" />
+        <sha256sum file="i2pupdate.sud" />
+        <!-- make torrent files -->
+        <copy file="i2pupdate.sud" tofile="i2pupdate-${release.number}.sud" />
+        <mktorrent file="i2pupdate-${release.number}.sud" />
+        <copy file="i2pupdate.su2" tofile="i2pupdate-${release.number}.su2" />
+        <mktorrent file="i2pupdate-${release.number}.su2" />
+        <copy file="i2pupdate.su3" tofile="i2pupdate-${release.number}.su3" />
+        <mktorrent file="i2pupdate-${release.number}.su3" />
+        <echo message="Don't forget to mtn tag w: i2p-${release.number}" />
+        <echo message="... and mtn cert t:i2p-${release.number} branch i2p.i2p.release" />
+    </target>
+
+    <target name="debian" depends="debian-clean, debchange, debian-binary" />
+
+    <target name="getExtendedVersion" depends="buildProperties, trimMtnRev">
+        <property name="MtnShortHash" value="unknown" />
+        <condition property="Extended.Version" value="${full.version}-${MtnShortHash}">
+            <not>
+                <or>
+                    <equals arg1="${MtnShortHash}" arg2="" />
+                    <equals arg1="${MtnShortHash}" arg2="unknown" />
+                </or>
+            </not>
+        </condition>
+        <!-- if not set above we'll set it here -->
+        <property name="Extended.Version" value="${full.version}" />
+    </target>
+
+    <target name="debchange" depends="getExtendedVersion" unless="noAutoDebchange">
+        <echo message= "Debian version is ${Extended.Version}-1" />
+        <exec executable="dch" failonerror="true">
+            <arg value="-b" />
+            <arg value="--check-dirname-level" />
+            <arg value="0" />
+            <arg value="-v" />
+            <arg value="${Extended.Version}-1" />
+            <arg value="Unofficial Debian package built using &quot;ant debian&quot;" />
+        </exec>
+    </target>
+
+    <target name="debian-binary" depends="getExtendedVersion">
+        <exec executable="fakeroot" failonerror="true">
+            <arg value="debian/rules" />
+            <arg value="patch" />
+            <arg value="binary" />
+            <arg value="clean" />
+        </exec>
+        <delete dir=".pc" />
+        <move todir=".">
+            <fileset dir=".." includes="libjbigi*${release.number}*.deb i2p*${release.number}*.deb" />
+        </move>
+        <echo message="" />
+        <echo message="====================" />
+        <echo message="Packages have been built and moved to ${basedir}" />
+        <echo message="====================" />
+    </target>
+
+    <target name="debian-clean" depends="getExtendedVersion" >
+        <exec executable="fakeroot" failonerror="true">
+            <arg value="debian/rules" />
+            <arg value="clean" />
+        </exec>
+        <delete dir="./.pc" />
+    </target>
+
+    <target name="debian-tarball" depends="getExtendedVersion">
+        <!-- this will use the monotonerc file in the current workspace -->
+        <fail message="This target cannot be used without Monotone! Use &quot;fakeroot debian/rules get-orig-source&quot; instead.">
+            <condition>
+                <not>
+                    <isset property="mtn.available" />
+                </not>
+            </condition>
+        </fail>
+        <property name="debian.tarball.name" value="i2p_${Extended.Version}.orig.tar.bz2" />
+        <echo message="Checking out fresh copy into ../i2p-${Extended.Version} for tarballing:" />
+        <delete dir="../i2p-${Extended.Version}" />
+        <exec executable="mtn" failonerror="true">
+            <arg value="co" />
+            <arg value="-b" />
+            <arg value="i2p.i2p" />
+            <!-- w: is the revision of the current workspace -->
+            <arg value="-r" />
+            <arg value="w:" />
+            <arg value="../i2p-${Extended.Version}" />
+        </exec>
+        <delete includeemptydirs="true" quiet="false">
+            <fileset dir="../i2p-${Extended.Version}/installer/lib/" />
+            <fileset dir="../i2p-${Extended.Version}/Slackware" />
+            <fileset dir="../i2p-${Extended.Version}/_MTN" />
+        </delete>
+        <tar longfile="gnu" destfile="../${debian.tarball.name}" compression="bzip2">
+            <tarfileset dir="../i2p-${Extended.Version}" prefix="/i2p-${Extended.Version}">
+                <include name="**/**" />
+                <exclude name="debian/**"/>
+                <exclude name="**/*.sh"/>
+            </tarfileset>
+            <tarfileset dir="../i2p-${Extended.Version}" prefix="/i2p-${Extended.Version}" filemode="755">
+                <exclude name="debian/**" />
+                <include name="**/*.sh" />
+            </tarfileset>
+        </tar>
+    </target>
+
+    <target name="debian-patch" depends="getExtendedVersion" >
+        <exec executable="quilt" failonerror="true">
+            <arg value="-a" />
+            <arg value="push" />
+        </exec>
+        <echo message="====================" />
+    </target>
+    <target name="debian-unpatch" depends="buildProperties">
+        <exec executable="quilt" failonerror="false">
+            <arg value="-a" />
+            <arg value="pop" />
+        </exec>
+    </target>
+
+    <target name="debianrepo" depends="debian">
+        <exec dir="debian" executable="./makerepo.sh" failonerror="true"/>
+    </target>
+
+<!-- the following are appened to help build barebone portable version,
+     none of the above is modified for this purpose -->
+	<target name = "pkg-portable-clean">
+		<delete dir="build/" />
+		<delete dir="pkg-temp/" />
+		<delete>
+			<fileset dir="." includes="portable-**.zip**" />
+		</delete>
+	</target>
+<!-- build a portable archive -->
+
+<!-- *0* Since we simply pack all files in folder "build/" into our archieve,
+		we need to make sure its small, with NO redundent jars or wars.
+		thus cleaning is required before each build-->
+	<target name="buildSmallOnly" depends="pkg-portable-clean,buildSmall"/>
+
+<!-- *1* preparing the jars by OS dependent de-bloating -->
+	<target name="preppkg-portable-win32-jbigi" depends="buildSmallOnly, jbigi-windows-only" />
+
+	<target name="preppkg-portable-linux-jbigi"  depends="buildSmallOnly, jbigi-linux-only" />
+
+<!-- *2* os independent procedure  -->
+	<target name="preppkg-portable-basic" >
+		<mkdir dir="pkg-temp" />
+			<!-- non OS dependent configurations only, dont add *nux/win stuff here -->
+			<copy todir="pkg-temp">
+				<fileset dir="installer/resources/portable/configs/" />
+			</copy>
+			<copy file="installer/resources/blocklist.txt" todir="pkg-temp/" />
+			<copy file="installer/resources/hosts.txt" todir="pkg-temp/" />
+			<copy file="installer/resources/readme.license.txt" todir="pkg-temp/" />
+		<mkdir dir="pkg-temp/addressbook" />
+			<copy file="apps/addressbook/subscriptions.txt" todir="pkg-temp/addressbook/" />
+			<copy file="apps/addressbook/myhosts.txt"  todir="pkg-temp/addressbook/" />
+			<!-- config.txt is in installer/resources/portable -->
+		<mkdir dir="pkg-temp/docs" />
+			<copy file="installer/resources/initialNews/initialNews.xml" tofile="pkg-temp/docs/news.xml" overwrite="true" />
+			<copy file="installer/resources/readme/readme.html" tofile="pkg-temp/docs/readme.html" />
+			<copy file="installer/resources/startconsole.html" todir="pkg-temp/docs/" />
+			<copy file="installer/resources/start.ico" todir="pkg-temp/docs/" />
+			<copy file="installer/resources/console.ico" todir="pkg-temp/docs/" />
+			<!-- HTTP Header files, english only,
+				if you need a different lang do it in a seperate target -->
+			<copy todir="pkg-temp/docs/" >
+				<fileset dir="installer/resources/proxy/"  includes="**-header.ht" />
+			</copy>
+			<!-- Theme light only -->
+			<copy todir="pkg-temp/docs/themes/console/light/" overwrite="true" >
+				<fileset dir="installer/resources/themes/console/light/" includes="**.css" />
+			</copy>
+			<copy file="installer/resources/themes/console/light/console_big.css" todir="portable/docs/themes/console/light/" />
+			<copy todir="pkg-temp/docs/themes/console/images/" >
+				<fileset dir="installer/resources/themes/console/images/" />
+			</copy>
+			<!-- FLAGs for language icon (not for ip)-->
+			<copy todir="pkg-temp/docs/icons/flags" >
+				<fileset dir="installer/resources/icons/flags/" includes="cn.png,de.png,fr.png,nl.png,ru.png,se.png,us.png" />
+			</copy>
+		<mkdir dir="pkg-temp/webapps" />
+			<copy todir="pkg-temp/webapps/">
+				<fileset dir="build/" includes="**.war" />
+			</copy>
+		<mkdir dir="pkg-temp/lib" />
+			<copy todir ="pkg-temp/lib/" >
+				<fileset dir="build/" includes="**.jar" />
+			</copy>
+			<!-- 3rd party jars from apps/  -->
+				<!-- jrobin - without jobin , you lost graph and get a lot error entry in logs -->
+			<copy file="build/jrobin.jar" tofile="pkg-temp/lib/jrobin.jar" />
+	</target>
+<!-- *3* os dependent procedure/commands -->
+	<target name = "preppkg-portable-win32" depends="preppkg-portable-win32-jbigi,preppkg-portable-basic">
+			<!-- systray4.j  - why do we need trayicons for portable version ? dependency hardcoded in console -->
+		<copy file="apps/systray/java/lib/systray4j.dll" todir="pkg-temp/lib" />
+		<copy file="apps/systray/java/lib/systray4j.jar" todir="pkg-temp/lib" />
+			<!--wrapper - dont even think about it. i2p cosumes appreantly more mem without it on win32-->
+		<copy file="installer/lib/wrapper/win32/wrapper.dll" todir="pkg-temp/lib" />
+		<copy file="installer/lib/wrapper/all/wrapper.jar" todir="pkg-temp/lib" />
+		<copy file="installer/lib/wrapper/win32/I2Psvc.exe" tofile="pkg-temp/i2psvc.ex_" />
+			<!--  copy the unpack/start batchfiles -->
+		<copy todir="pkg-temp">
+			<fileset dir="installer/resources/portable/win32/" />
+		</copy>
+	</target>
+<!-- *4* command for windows package -->
+	<target name = "pkg-portable-win32"	depends="preppkg-portable-win32, pack200" >
+		<!-- i need the portable\ folder in .zip so basedir is set to . -->
+		<move file="pkg-temp" tofile="portable"/>
+		<zip destfile="portable-win32.zip" basedir="." level="9" includes="portable\**" />
+		<checksum file="portable-win32.zip" forceOverwrite="yes"/>
+		<move file="portable" tofile="pkg-temp"/>
+	</target>
+</project>

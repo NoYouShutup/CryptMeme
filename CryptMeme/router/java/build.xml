@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="all" name="i2p_router">
+    <target name="all" depends="clean, build" />
+    <target name="build" depends="builddep, jar" />
+    <target name="builddep">
+        <!-- run from top level build.xml to get dependencies built -->
+    </target>
+    <condition property="depend.available">
+        <typefound name="depend" />
+    </condition>
+    <target name="depend" if="depend.available">
+        <depend
+            cache="../../build"
+            srcdir="./src" 
+            destdir="./build/obj" >
+            <!-- Depend on classes instead of jars where available -->
+            <classpath>
+                <pathelement location="../../core/java/build/obj" />
+            </classpath>
+        </depend>
+    </target>
+    <target name="dependVersion">
+        <!-- Force the dependency on the RouterVersion as depend doesn't recognize constant changes  -->
+        <dependset>
+             <srcfilelist dir="." files="build/obj/net/i2p/router/RouterVersion.class" />
+             <targetfilelist dir="." files="build/obj/net/i2p/router/Router.class" />
+             <targetfilelist dir="." files="build/obj/net/i2p/router/StatisticsManager.class" />
+        </dependset>
+    </target>
+
+    <!-- only used if not set by a higher build.xml -->
+    <property name="javac.compilerargs" value="" />
+    <property name="javac.version" value="1.6" />
+
+    <target name="compile" depends="depend, dependVersion">
+        <mkdir dir="./build" />
+        <mkdir dir="./build/obj" />
+        <javac srcdir="./src" debug="true" source="${javac.version}" target="${javac.version}" deprecation="on"
+               debuglevel="lines,vars,source"
+               includeAntRuntime="false"
+               destdir="./build/obj" classpath="../../core/java/build/obj:../../core/java/build/i2p.jar" >
+            <compilerarg line="${javac.compilerargs}" />
+        </javac>
+    </target>
+
+    <target name="listChangedFiles" if="mtn.available" >
+        <exec executable="mtn" outputproperty="workspace.changes" errorproperty="mtn.error2" failifexecutionfails="false" >
+            <arg value="list" />
+            <arg value="changed" />
+            <arg value="." />
+        </exec>
+        <!-- \n in an attribute value generates an invalid manifest -->
+        <exec executable="tr" inputstring="${workspace.changes}" outputproperty="workspace.changes.tr" errorproperty="mtn.error2" failifexecutionfails="false" >
+            <arg value="-s" />
+            <arg value="[:space:]" />
+            <arg value="," />
+        </exec>
+    </target>
+
+    <target name="jar" depends="compile, jarUpToDate, listChangedFiles" unless="jar.uptodate" >
+        <!-- set if unset -->
+        <property name="workspace.changes.tr" value="" />
+        <jar destfile="./build/router.jar" basedir="./build/obj" includes="**/*.class" >
+            <manifest>
+                <!-- so people with very old wrapper.config files will still work with Jetty 6 -->
+                <attribute name="Class-Path" value="jetty-i2p.jar jetty-java5-threadpool.jar jetty-rewrite-handler.jar jetty-sslengine.jar jetty-start.jar jetty-util.jar" />
+                <attribute name="Implementation-Version" value="${full.version}" />
+                <attribute name="Built-By" value="${build.built-by}" />
+                <attribute name="Build-Date" value="${build.timestamp}" />
+                <attribute name="Base-Revision" value="${workspace.version}" />
+                <attribute name="Workspace-Changes" value="${workspace.changes.tr}" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="jarUpToDate">
+        <uptodate property="jar.uptodate" targetfile="build/router.jar" >
+            <srcfiles dir= "." includes="build/obj/**/*.class" />
+        </uptodate>
+    </target>
+
+    <target name="javadoc">
+        <mkdir dir="./build" />
+        <mkdir dir="./build/javadoc" />
+        <javadoc 
+            sourcepath="./src:./test/junit:../../core/java/src:../../core/java/test/junit" destdir="./build/javadoc" 
+            packagenames="*" 
+            use="true" 
+            splitindex="true" 
+            windowtitle="I2P Router" />
+    </target>
+
+    <!-- scala paths -->
+    <target name="scala.init">
+        <property name="scala-library.jar" value="${scalatest.libs}/scala-library.jar" />
+        <property name="scalatest.jar" value="${scalatest.libs}/scalatest.jar" />
+        <taskdef resource="scala/tools/ant/antlib.xml">
+            <classpath>
+                <pathelement location="${scalatest.libs}/scala-compiler.jar" />
+                <pathelement location="${scala-library.jar}" />
+            </classpath>
+        </taskdef>
+    </target>
+
+    <!-- unit tests -->
+    <target name="builddepscalatest">
+        <ant dir="../../core/java/" target="jar" />
+        <ant dir="../../core/java/" target="jarScalaTest" />
+    </target>
+    <target name="builddeptest">
+        <ant dir="../../core/java/" target="jarTest" />
+    </target>
+    <target name="scalatest.compileTest" depends="builddepscalatest, compile, scala.init">
+        <mkdir dir="./build" />
+        <mkdir dir="./build/obj_scala" />
+        <scalac srcdir="./test/scalatest" destdir="./build/obj_scala" deprecation="on" >
+            <classpath>
+                <pathelement location="${javac.classpath}" />
+                <pathelement location="${scala-library.jar}" />
+                <pathelement location="${scalatest.jar}" />
+                <pathelement location="../../core/java/build/i2pscalatest.jar" />
+                <pathelement location="./build/obj" />
+            </classpath>
+        </scalac>
+    </target>
+
+    <target name="junit.compileTest" depends="builddeptest, compile">
+        <mkdir dir="./build" />
+        <mkdir dir="./build/obj" />
+        <!-- set hamcrest and junit homes to the old default unless overridden elsewhere -->
+        <property name="hamcrest.home" value="${ant.home}/lib/" />
+        <property name="junit.home" value="${ant.home}/lib/" />
+        <javac srcdir="./test/junit" debug="true" source="${javac.version}" target="${javac.version}" deprecation="on"
+            debuglevel="lines,vars,source"
+            includeAntRuntime="true"
+            destdir="./build/obj">
+            <classpath>
+                <pathelement location="${hamcrest.home}/hamcrest-core.jar" />
+                <pathelement location="${hamcrest.home}/hamcrest-library.jar" />
+                <pathelement location="${hamcrest.home}/hamcrest-integration.jar" />
+                <pathelement location="${hamcrest.home}/hamcrest-all.jar" />
+                <pathelement location="${junit.home}/junit4.jar" />
+                <pathelement location="../../core/java/build/i2ptest.jar" />
+            </classpath>
+            <compilerarg line="${javac.compilerargs}" />
+        </javac>
+    </target>
+    <!-- jars with tests -->
+    <target name="jarScalaTest" depends="scalatest.compileTest">
+        <mkdir dir="./build/obj_scala_jar" />
+        <copy todir="./build/obj_scala_jar">
+            <fileset dir="./build/">
+                <include name="obj/**/*.class"/>
+            </fileset>
+            <mapper type="glob" from="obj/*" to="*" />
+        </copy>
+        <copy todir="./build/obj_scala_jar">
+            <fileset dir="./build/">
+                <include name="obj_scala/**/*.class"/>
+            </fileset>
+            <mapper type="glob" from="obj_scala/*" to="*" />
+        </copy>
+        <jar destfile="./build/routerscalatest.jar" basedir="./build/obj_scala_jar" includes="**/*.class" />
+    </target>
+    <target name="jarTest" depends="junit.compileTest">
+        <jar destfile="./build/routertest.jar" basedir="./build/obj" includes="**/*.class" />
+    </target>
+    <!-- preparation of code coverage tool of choice -->
+    <target name="prepareClover" depends="compile" if="with.clover">
+        <taskdef resource="clovertasks"/>
+        <mkdir dir="../../reports/router/clover" />
+        <clover-setup initString="../../reports/router/clover/coverage.db"/>
+    </target>
+    <target name="prepareCobertura" depends="compile" if="with.cobertura">
+        <taskdef classpath="${with.cobertura}" resource="tasks.properties" onerror="report" />
+        <mkdir dir="./build/obj_cobertura" />
+        <delete file="./cobertura.ser" />
+        <cobertura-instrument todir="./build/obj_cobertura">
+            <fileset dir="./build/obj">
+                <include name="**/*.class"/>
+                <!-- exclude Test classes -->
+                <exclude name="**/*Test.class" />
+                <!-- exclude anything not in net.i2p.* -->
+                <exclude name="org/cybergarage/**/*.class" />
+                <exclude name="org/freenetproject/**/*.class" />
+                <exclude name="org/xlattice/**/*.class" />
+            </fileset>
+        </cobertura-instrument>
+    </target>
+    <target name="prepareTest" depends="prepareClover, prepareCobertura" />
+    <!-- end preparation of code coverage tool -->
+    <target name="scalatest.test" depends="clean, scalatest.compileTest, prepareTest">
+        <mkdir dir="../../reports/router/scalatest/" />
+        <delete>
+            <fileset dir="../../reports/router/scalatest">
+                <include name="TEST-*.xml"/>
+            </fileset>
+        </delete>
+        <taskdef name="scalatest" classname="org.scalatest.tools.ScalaTestAntTask">
+            <classpath>
+                <pathelement location="${scala-library.jar}" />
+                <pathelement location="${scalatest.jar}" />
+                <pathelement location="./build/obj_cobertura" />
+                <pathelement location="./build/obj" />
+                <pathelement location="../../core/java/build/i2p.jar" />
+                <pathelement location="../../build/jbigi.jar" />
+                <pathelement location="${with.clover}" />
+                <pathelement location="${with.cobertura}" />
+            </classpath>
+        </taskdef>
+        <scalatest runpath="./build/obj_scala" fork="yes" maxmemory="384M">
+            <tagsToExclude>
+                SlowTests
+            </tagsToExclude>
+            <reporter type="stdout" />
+            <reporter type="junitxml" directory="../../reports/router/scalatest/" />
+        </scalatest>
+        <!-- set if unset -->
+        <property name="host.fakename" value="i2ptester" />
+        <!-- replace hostname that junit inserts into reports with fake one -->
+        <replaceregexp byline="true"
+            match="(hostname=)&quot;[^&quot;]+&quot;"
+            replace="\1&quot;${host.fakename}&quot;">
+            <fileset dir="../../reports/router/scalatest/" />
+        </replaceregexp>
+    </target>
+    <target name="junit.test" depends="clean, junit.compileTest, prepareTest">
+        <mkdir dir="../../reports/router/junit/" />
+        <delete>
+            <fileset dir="../../reports/router/junit">
+                <include name="TEST-*.xml"/>
+            </fileset>
+        </delete>
+        <junit printsummary="withOutAndErr" fork="yes" showoutput="yes" >
+            <sysproperty key="net.sourceforge.cobertura.datafile" file="./cobertura.ser" />
+            <classpath>
+                <pathelement path="${javac.classpath}" />
+                <pathelement location="${hamcrest.home}/hamcrest-core.jar" />
+                <pathelement location="${hamcrest.home}/hamcrest-library.jar" />
+                <pathelement location="${hamcrest.home}/hamcrest-integration.jar" />
+                <pathelement location="${hamcrest.home}/hamcrest-all.jar" />
+                <pathelement location="${junit.home}/junit4.jar" />
+                <pathelement location="./build/obj_cobertura" />
+                <pathelement location="./build/obj" />
+                <pathelement location="../../core/java/build/i2ptest.jar" />
+                <pathelement location="../../build/jbigi.jar" />
+                <pathelement location="${with.clover}" />
+                <pathelement location="${with.cobertura}" />
+            </classpath>
+            <batchtest todir="../../reports/router/junit/">
+                <fileset dir="./test/junit">
+                    <include name="**/*Test.java" />
+                </fileset>
+            </batchtest>
+            <formatter type="xml"/>
+        </junit>
+        <!-- set if unset -->
+        <property name="host.fakename" value="i2ptester" />
+        <!-- replace hostname that junit inserts into reports with fake one -->
+        <replaceregexp byline="true"
+            match="(hostname=)&quot;[^&quot;]+&quot;"
+            replace="\1&quot;${host.fakename}&quot;">
+            <fileset dir="../../reports/router/junit/" />
+        </replaceregexp>
+    </target>
+
+    <!-- both junit and scala, but we have no scala tests yet -->
+    <target name="test" depends="junit.test"/>
+
+    <!-- test reports -->
+    <target name="scalatest.report">
+        <junitreport todir="../../reports/router/scalatest">
+            <fileset dir="../../reports/router/scalatest">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="../../reports/router/html/scalatest"/>
+        </junitreport>
+    </target>
+    <target name="junit.report">
+        <junitreport todir="../../reports/router/junit">
+            <fileset dir="../../reports/router/junit">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="../../reports/router/html/junit"/>
+        </junitreport>
+    </target>
+    <target name="clover.report" depends="test" if="with.clover">
+        <clover-report>
+            <current outfile="../../reports/router/html/clover">
+                <format type="html"/>
+            </current>
+        </clover-report>
+    </target>
+    <target name="cobertura.report" depends="test" if="with.cobertura">
+        <mkdir dir="../../reports/router/cobertura" />
+        <cobertura-report format="xml" srcdir="./src" destdir="../../reports/router/cobertura" />
+        <mkdir dir="../../reports/router/html/cobertura" />
+        <cobertura-report format="html" srcdir="./src" destdir="../../reports/router/html/cobertura" />
+        <delete file="./cobertura.ser" />
+    </target>
+    <target name="test.report" depends="junit.report, clover.report, cobertura.report"/>
+    <!-- end test reports -->
+    <target name="fulltest" depends="cleandep, test, test.report" />
+    <!-- end unit tests -->
+
+    <target name="clean">
+        <delete dir="./build" />
+    </target>
+    <target name="cleandep" depends="clean">
+    </target>
+    <target name="distclean" depends="clean">
+    </target>
+</project>

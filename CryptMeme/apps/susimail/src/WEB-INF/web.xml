@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE web-app
+    PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN"
+    "http://java.sun.com/j2ee/dtds/web-app_2.2.dtd">
+<web-app>
+    <filter>
+        <filter-name>XSSFilter</filter-name>
+        <filter-class>net.i2p.servlet.filters.XSSFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>XSSFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+  <display-name>susimail</display-name>
+  <servlet>
+    <servlet-name>SusiMail</servlet-name>
+    <servlet-class>i2p.susi.webmail.WebMail</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>SusiMail</servlet-name>
+    <url-pattern>/susimail</url-pattern>
+  </servlet-mapping>
+  <session-config>
+    <session-timeout>1440</session-timeout>
+    <cookie-config>
+      <http-only>true</http-only>
+    </cookie-config>
+  </session-config>
+  <!-- tomcat (untested) -->
+  <context-param>
+    <param-name>crossContext</param-name>
+    <param-value>false</param-value>
+  </context-param>
+  <!-- jetty
+    -  This is required so the same session ID isn't shared with
+    -  the base context. When shared, it's expired after 30 minutes
+    -  in the base context which invalidates it in our context too.
+    -->
+  <context-param>
+    <param-name>org.eclipse.jetty.servlet.SessionCookie</param-name>
+    <param-value>SUSIMAILJSESSIONID</param-value>
+  </context-param>
+
+<!--
+     Jetty 6 mulipart form handling
+     See http://docs.codehaus.org/display/JETTY/File+Upload+in+jetty6
+     and RequestWrapper.java.
+     Unused because it doesn't support content-type until Jetty 8.
+
+    <filter>
+        <filter-name>fileuploadfilter</filter-name>
+        <filter-class>org.mortbay.servlet.MultiPartFilter</filter-class>
+        <init-param>
+            <param-name>deleteFiles</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>fileuploadfilter</filter-name>
+        <url-pattern>/susimail</url-pattern>
+    </filter-mapping>
+-->
+
+</web-app>
