@@ -33,7 +33,7 @@ class I2PClientService implements InitializingBean, I2PSessionListener {
 	}
 	
 	public void init() {
-		println "Starting up the I2P Router..."
+		println "Starting up the I2P Router (this may take a while)..."
 		// Properties props = new Properties();
 		// props.put("i2p.dir.base","./i2p");
 		router = new Router();

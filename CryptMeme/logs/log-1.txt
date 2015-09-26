@@ -1,1 +1,1 @@
-6/14/15 5:44:41 PM ERROR [JobQueue 1/1] uter.startup.LoadClientAppsJob: Warning - No client apps or router console configured - we are just a router
+9/26/15 2:27:56 PM ERROR [JobQueue 1/1] uter.startup.LoadClientAppsJob: Warning - No client apps or router console configured - we are just a router

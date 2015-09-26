@@ -13,4 +13,21 @@ Setting up I2P Client Service...
 Failed to connect, trying again:
 net.i2p.client.I2PSessionException: [I2PSessionMuxedImpl #6337]: Cannot connect to the router on [internal connection]:0
 I2P Client Service set up. My destination:
+wtB1hgCthZPhMFZid~D2Mmrahh2TCeIyvnyQDwcRWhHq8QHw47OiFAINLaclrx7B9jX4VwRegKiwmPEjYzn7029x~c6Xbuj3KQoS~k8TsrvaStX7zr77~LRsVxb0Wyvz17strWV-7frha2C2qWjles0bFTre~tRXE0roCOkkR147fEXBqvAgB-ki5zaE5c5i~AHl1Hp9YQWW~bCe3y-IF3i1cQdjOnomWgWRRqk~FFfaasIyfcVC62AYooThfViyrQ20pnHkkrB9-~9r6nIKRadp833FOB-fGOPeExNpLvl7eey0Nqgx9wNMOvyToVec89nKDNPYfJAYQMHmpjy9Z3eQKbN2fMAJfCCefU5GicCKziAM8SujJGXCWdlR1SMbUayG2RE9SzbzILqLcXEZtQiOja3n3kIWqcep7f-hCN2z5dSZNHohep~juMXBoGsX-wExgyNMVZ9pKp2tqlk9zC0Z42r11AyTvOIV0od30azsjojpmCfbw485drUtXRHBAAAAERROR - Cannot find I2P installation in C:\Users\jmorgan\git\NoYouShutup\CryptMeme\CryptMeme - Will probably be just a router with no apps or console at all!
+WARN: Old router was not shut down gracefully, deleting router.ping
+WARNING: Resource name [jcpuid-x86-windows.dll] was not found
+WARNING: Native CPUID library jcpuid not loaded - will not be able to read CPU information using CPUID
+INFO: Resource name [jbigi-windows-athlon64_64.dll] was not found
+INFO: Resource name [jbigi-windows-athlon64.dll] was not found
+INFO: Resource name [jbigi-windows-none_64.dll] was not found
+INFO: Resource name [jbigi-windows-none.dll] was not found
+WARNING: Native BigInteger library jbigi not loaded - using pure Java - poor performance may result - see http://www.i2p2.i2p/jbigi for help
+Setting up I2P Client Service...
+Warning - No client config file C:\Users\jmorgan\git\NoYouShutup\CryptMeme\CryptMeme\clients.config
+Warning - No client apps or router console configured - we are just a router
+Failed to connect, trying again:
+net.i2p.client.I2PSessionException: No manager yet
+Failed to connect, trying again:
+net.i2p.client.I2PSessionException: [I2PSessionMuxedImpl #27614]: Cannot connect to the router on [internal connection]:0
+I2P Client Service set up. My destination:
 wtB1hgCthZPhMFZid~D2Mmrahh2TCeIyvnyQDwcRWhHq8QHw47OiFAINLaclrx7B9jX4VwRegKiwmPEjYzn7029x~c6Xbuj3KQoS~k8TsrvaStX7zr77~LRsVxb0Wyvz17strWV-7frha2C2qWjles0bFTre~tRXE0roCOkkR147fEXBqvAgB-ki5zaE5c5i~AHl1Hp9YQWW~bCe3y-IF3i1cQdjOnomWgWRRqk~FFfaasIyfcVC62AYooThfViyrQ20pnHkkrB9-~9r6nIKRadp833FOB-fGOPeExNpLvl7eey0Nqgx9wNMOvyToVec89nKDNPYfJAYQMHmpjy9Z3eQKbN2fMAJfCCefU5GicCKziAM8SujJGXCWdlR1SMbUayG2RE9SzbzILqLcXEZtQiOja3n3kIWqcep7f-hCN2z5dSZNHohep~juMXBoGsX-wExgyNMVZ9pKp2tqlk9zC0Z42r11AyTvOIV0od30azsjojpmCfbw485drUtXRHBAAAA
